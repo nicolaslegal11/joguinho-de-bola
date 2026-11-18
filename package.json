@@ -1,0 +1,16 @@
+{
+  "name": "jogo-de-bola",
+  "version": "1.0.0",
+  "description": "Quadra - Bola e Chute: futebol 2v2 online com host autoritativo via WebSocket",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test-sim.js && node test-server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "ws": "^8.23.0"
+  }
+}

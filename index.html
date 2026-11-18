@@ -1,0 +1,5252 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Quadra - Bola e Chute</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+.hidden { display:none !important; }
+html, body {
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#0a5c36;
+    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    user-select:none;
+    -webkit-user-select:none;
+    -webkit-tap-highlight-color:transparent;
+}
+#canvas {
+    position:fixed;
+    inset:0;
+    display:block;
+    touch-action:none;
+}
+
+/* ===== Botão de tela cheia ===== */
+#fullscreen-btn {
+    position:fixed;
+    top:12px;
+    right:12px;
+    z-index:30;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:8px 14px;
+    border:1px solid rgba(255,255,255,0.35);
+    border-radius:8px;
+    background:rgba(0,0,0,0.35);
+    color:#fff;
+    font-size:13px;
+    font-weight:bold;
+    cursor:pointer;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+}
+#fullscreen-btn:active { background:rgba(0,0,0,0.55); }
+#fullscreen-btn .icon { font-size:16px; line-height:1; }
+
+/* ===== Botão de configurações (engrenagem) ===== */
+#settings-btn {
+    position:fixed;
+    top:12px;
+    left:12px;
+    z-index:30;
+    width:44px;
+    height:44px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border:1px solid rgba(255,255,255,0.35);
+    border-radius:8px;
+    background:rgba(0,0,0,0.35);
+    color:#fff;
+    cursor:pointer;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+    transition:background 0.15s, transform 0.15s;
+}
+#settings-btn:active {
+    background:rgba(0,0,0,0.55);
+    transform:scale(0.94);
+}
+
+/* ===== Menu de configurações ===== */
+#settings-overlay {
+    position:fixed;
+    inset:0;
+    z-index:60;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    background:rgba(0,0,0,0.55);
+    -webkit-tap-highlight-color:transparent;
+}
+#settings-overlay.hidden { display:none; }
+#keys-section.hidden { display:none; }
+#settings-main-options.hidden { display:none; }
+
+#lobby-settings-overlay {
+    position:fixed;
+    inset:0;
+    z-index:200;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    background:rgba(0,0,0,0.6);
+    -webkit-tap-highlight-color:transparent;
+}
+#lobby-settings-overlay.hidden { display:none; }
+#lobby-settings-close {
+    width:100%;
+    margin-top:18px;
+    padding:13px;
+    border:none;
+    border-radius:10px;
+    background:#e94560;
+    color:#fff;
+    font-size:14px;
+    font-weight:800;
+    letter-spacing:1.2px;
+    cursor:pointer;
+    transition:filter 0.15s;
+}
+#lobby-settings-close:active { filter:brightness(0.85); }
+#lobby-settings-menu {
+    width:min(440px, 100%);
+    max-height:88vh;
+    overflow-y:auto;
+    padding:22px;
+    border-radius:16px;
+    border:1px solid rgba(255,255,255,0.18);
+    background:linear-gradient(180deg, #143029, #0a1d18);
+    box-shadow:0 24px 70px rgba(0,0,0,0.6);
+    color:#fff;
+    user-select:none;
+    -webkit-user-select:none;
+}
+#lobby-settings-menu h2 {
+    margin:0;
+    font-size:19px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+}
+
+#settings-menu {
+    width:min(440px, 100%);
+    max-height:88vh;
+    overflow-y:auto;
+    padding:22px;
+    border-radius:16px;
+    border:1px solid rgba(255,255,255,0.18);
+    background:linear-gradient(180deg, #143029, #0a1d18);
+    box-shadow:0 24px 70px rgba(0,0,0,0.6);
+    color:#fff;
+    user-select:none;
+    -webkit-user-select:none;
+}
+#settings-menu h2 {
+    margin:0;
+    font-size:19px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+}
+.menu-sub {
+    margin:5px 0 14px;
+    font-size:12.5px;
+    color:rgba(255,255,255,0.55);
+}
+
+.setting-row {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding:14px 0;
+    border-top:1px solid rgba(255,255,255,0.09);
+    cursor:pointer;
+}
+.setting-info {
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+}
+.setting-title {
+    font-size:15.5px;
+    font-weight:700;
+}
+.setting-desc {
+    font-size:12.5px;
+    line-height:1.35;
+    color:rgba(255,255,255,0.6);
+}
+
+/* ===== Barra de intensidade do esticamento ===== */
+.setting-extra {
+    padding:0 0 16px;
+}
+.setting-extra.hidden { display:none; }
+.extra-head {
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:9px;
+}
+.extra-head .setting-title { font-size:14px; }
+#stretch-level-value {
+    flex:0 0 auto;
+    min-width:44px;
+    font-size:14px;
+    font-weight:800;
+    text-align:right;
+    color:#3ddc84;
+}
+#opt-stretch-level {
+    display:block;
+    width:100%;
+    height:30px;
+    margin:0;
+    background:transparent;
+    cursor:pointer;
+    touch-action:none;
+    -webkit-appearance:none;
+    appearance:none;
+}
+#opt-stretch-level::-webkit-slider-runnable-track {
+    height:6px;
+    border-radius:3px;
+    background:rgba(255,255,255,0.18);
+}
+#opt-stretch-level::-webkit-slider-thumb {
+    -webkit-appearance:none;
+    width:22px;
+    height:22px;
+    margin-top:-8px;
+    border-radius:50%;
+    background:#3ddc84;
+    border:2px solid #fff;
+    box-shadow:0 2px 6px rgba(0,0,0,0.4);
+}
+#opt-stretch-level::-moz-range-track {
+    height:6px;
+    border-radius:3px;
+    background:rgba(255,255,255,0.18);
+}
+#opt-stretch-level::-moz-range-thumb {
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    background:#3ddc84;
+    border:2px solid #fff;
+    box-shadow:0 2px 6px rgba(0,0,0,0.4);
+}
+
+.switch {
+    appearance:none;
+    -webkit-appearance:none;
+    flex:0 0 auto;
+    position:relative;
+    width:54px;
+    height:30px;
+    margin:0;
+    border-radius:15px;
+    border:1px solid rgba(255,255,255,0.35);
+    background:rgba(255,255,255,0.16);
+    cursor:pointer;
+    transition:background 0.18s, border-color 0.18s;
+}
+.switch::after {
+    content:'';
+    position:absolute;
+    top:3px;
+    left:3px;
+    width:22px;
+    height:22px;
+    border-radius:50%;
+    background:#fff;
+    box-shadow:0 2px 5px rgba(0,0,0,0.35);
+    transition:transform 0.18s;
+}
+.switch:checked {
+    background:#3ddc84;
+    border-color:#3ddc84;
+}
+.switch:checked::after {
+    transform:translateX(24px);
+}
+
+#settings-close {
+    width:100%;
+    margin-top:18px;
+    padding:13px;
+    border:none;
+    border-radius:10px;
+    background:#e94560;
+    color:#fff;
+    font-size:14px;
+    font-weight:800;
+    letter-spacing:1.2px;
+    cursor:pointer;
+    transition:filter 0.15s;
+}
+#settings-close:active { filter:brightness(0.85); }
+
+/* ===== Área de toque do joystick (metade esquerda) ===== */
+#joystick-trigger {
+    position:fixed;
+    left:0;
+    top:0;
+    width:50%;
+    height:100%;
+    z-index:5;
+    touch-action:none;
+}
+
+/* ===== Joystick visual (não recebe eventos) ===== */
+#joystick-area {
+    position:fixed;
+    width:120px;
+    height:120px;
+    left:0;
+    top:0;
+    z-index:10;
+    pointer-events:none;
+    opacity:0;
+    transform:translate(-50%, -50%) scale(0.85);
+    transition:opacity 0.12s ease-out, transform 0.12s ease-out;
+}
+#joystick-area.active {
+    opacity:1;
+    transform:translate(-50%, -50%) scale(1);
+}
+#joystick-base {
+    position:absolute;
+    inset:0;
+    border:3px solid rgba(255,255,255,0.35);
+    border-radius:50%;
+    background:rgba(255,255,255,0.08);
+}
+#joystick-stick {
+    position:absolute;
+    width:50px;
+    height:50px;
+    left:50%;
+    top:50%;
+    margin:-25px 0 0 -25px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.85);
+    box-shadow:0 3px 10px rgba(0,0,0,0.35);
+    will-change:transform;
+}
+
+/* ===== Botão de chute ===== */
+#kick-btn {
+    position:fixed;
+    right:20px;
+    bottom:22px;
+    z-index:30;
+    width:92px;
+    height:92px;
+    border-radius:50%;
+    border:3px solid rgba(255,255,255,0.55);
+    background:radial-gradient(circle at 35% 30%, #ff6b83, #e94560 55%, #b82f49);
+    color:#fff;
+    font-size:15px;
+    font-weight:800;
+    letter-spacing:0.5px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    touch-action:none;
+    -webkit-tap-highlight-color:transparent;
+    box-shadow:0 6px 18px rgba(0,0,0,0.35);
+    transition:transform 0.08s, box-shadow 0.08s, opacity 0.15s;
+}
+#kick-btn:active,
+#kick-btn.pressed {
+    transform:scale(0.92);
+    box-shadow:0 2px 8px rgba(0,0,0,0.35);
+}
+#kick-btn.disabled {
+    opacity:0.45;
+}
+
+/* ===== Botão de poder (super chute) ===== */
+#power-btn {
+    position:fixed;
+    right:31px;
+    bottom:130px;
+    z-index:30;
+    width:70px;
+    height:70px;
+    padding:0;
+    border:3px solid rgba(255,255,255,0.5);
+    border-radius:50%;
+    background:#0e2636;
+    color:#fff;
+    overflow:hidden;
+    cursor:pointer;
+    touch-action:none;
+    -webkit-tap-highlight-color:transparent;
+    box-shadow:0 6px 18px rgba(0,0,0,0.35);
+    transition:transform 0.08s, border-color 0.2s, box-shadow 0.2s;
+}
+#power-btn:active { transform:scale(0.94); }
+
+.power-fill {
+    position:absolute;
+    left:0;
+    right:0;
+    bottom:0;
+    height:100%;
+    background:linear-gradient(180deg, #37c8ff, #1276c9);
+    box-shadow:inset 0 3px 0 rgba(255,255,255,0.28);
+    transition:height 0.1s linear, background 0.2s;
+    pointer-events:none;
+}
+.power-content {
+    position:relative;
+    z-index:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    width:100%;
+    height:100%;
+    pointer-events:none;
+}
+.power-icon {
+    width:22px;
+    height:22px;
+    filter:drop-shadow(0 2px 3px rgba(0,0,0,0.4));
+}
+.power-text {
+    margin-top:2px;
+    font-size:9px;
+    font-weight:800;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    text-shadow:0 1px 2px rgba(0,0,0,0.5);
+}
+#power-btn.cooling {
+    border-color:rgba(255,255,255,0.3);
+}
+#power-btn.cooling .power-icon { opacity:0.7; }
+#power-btn.ready { border-color:#37c8ff; }
+#power-btn.armed {
+    border-color:#ffd93d;
+    box-shadow:0 0 0 3px rgba(255,217,61,0.25), 0 0 22px rgba(255,217,61,0.6);
+    animation:powerPulse 0.9s ease-in-out infinite;
+}
+#power-btn.armed .power-fill {
+    background:linear-gradient(180deg, #ffe066, #ff9f1a);
+}
+#power-btn.armed .power-content {
+    color:#3a2400;
+}
+#power-btn.armed .power-icon {
+    filter:drop-shadow(0 1px 0 rgba(255,255,255,0.35));
+}
+#power-btn.armed .power-text {
+    text-shadow:none;
+}
+@keyframes powerPulse {
+    0%, 100% { transform:scale(1); }
+    50%      { transform:scale(1.06); }
+}
+
+/* ===== Dica inicial ===== */
+#hint {
+    position:fixed;
+    left:50%;
+    bottom:18px;
+    transform:translateX(-50%);
+    z-index:20;
+    padding:8px 16px;
+    border-radius:20px;
+    background:rgba(0,0,0,0.4);
+    color:rgba(255,255,255,0.85);
+    font-size:13px;
+    white-space:nowrap;
+    pointer-events:none;
+    transition:opacity 0.4s;
+}
+#hint.hidden { opacity:0; }
+
+/* ===== Faixa de GOL (estilo Fall Guys) ===== */
+#goal-banner {
+    position:fixed;
+    left:50%;
+    top:50%;
+    z-index:40;
+    width:130vw;
+    pointer-events:none;
+    opacity:0;
+    transform:translate(-50%, -50%);
+}
+#goal-banner.show {
+    opacity:1;
+    animation:bannerInOut 3.2s cubic-bezier(.22,.9,.3,1) forwards;
+}
+.banner-inner {
+    position:relative;
+    width:100%;
+    padding:22px 0 30px;
+    transform:rotate(-5deg);
+    background:repeating-linear-gradient(
+        115deg,
+        #ffd93d 0 46px,
+        #ffb300 46px 92px
+    );
+    border-top:7px solid #241038;
+    border-bottom:7px solid #241038;
+    box-shadow:0 14px 50px rgba(0,0,0,0.55);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+}
+.banner-inner::after {
+    content:'';
+    position:absolute;
+    inset:0;
+    background:linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.6) 50%, transparent 60%);
+    transform:translateX(-130%);
+}
+#goal-banner.show .banner-inner::after {
+    animation:bannerShimmer 3.2s ease-in-out forwards;
+}
+.goal-text {
+    position:relative;
+    z-index:1;
+    font-size:clamp(46px, 10vw, 130px);
+    font-weight:900;
+    font-style:italic;
+    letter-spacing:3px;
+    color:#ffffff;
+    -webkit-text-stroke:3px #241038;
+    text-shadow:0 7px 0 #241038, 0 12px 24px rgba(0,0,0,0.4);
+    transform:skewX(-8deg);
+    white-space:nowrap;
+}
+@keyframes bannerInOut {
+    0%   { transform:translate(-50%, -50%) translateX(-160%); opacity:0; }
+    22%  { transform:translate(-50%, -50%) translateX(0); opacity:1; }
+    32%  { transform:translate(-50%, -50%) translateX(0) scale(1.04); }
+    42%  { transform:translate(-50%, -50%) translateX(0) scale(1); }
+    72%  { transform:translate(-50%, -50%) translateX(0); opacity:1; }
+    100% { transform:translate(-50%, -50%) translateX(160%) scale(0.85); opacity:0; }
+}
+@keyframes bannerShimmer {
+    0%   { transform:translateX(-130%); }
+    50%  { transform:translateX(130%); }
+    100% { transform:translateX(130%); }
+}
+
+/* ===== Customizador de HUD ===== */
+#hud-customizer {
+    position:fixed;
+    inset:0;
+    z-index:90;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    background:rgba(0,0,0,0.55);
+    -webkit-tap-highlight-color:transparent;
+}
+#hud-customizer.hidden { display:none; }
+#hud-customizer.full {
+    align-items:flex-start;
+    justify-content:flex-start;
+    padding:0;
+}
+#hud-canvas {
+    position:relative;
+    width:100vw;
+    height:100vh;
+    max-width:none;
+    max-height:none;
+    border:none;
+    border-radius:0;
+    background:rgba(0,0,0,0.35);
+    overflow:visible;
+    touch-action:none;
+    cursor:move;
+}
+#hud-controls-overlay {
+    position:absolute;
+    bottom:16px;
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    gap:12px;
+    z-index:10;
+    pointer-events:auto;
+}
+#hud-controls-overlay button {
+    padding:12px 20px;
+    border:none;
+    border-radius:10px;
+    font-size:14px;
+    font-weight:800;
+    cursor:pointer;
+}
+#hud-reset { background:rgba(255,255,255,0.12); color:#fff; }
+#hud-save { background:#3ddc84; color:#000; }
+
+/* Painel de propriedades do HUD */
+#hud-props-panel {
+    position:fixed;
+    top:10px;
+    left:50%;
+    transform:translateX(-50%);
+    width:min(340px, 92vw);
+    height:auto;
+    max-height:70vh;
+    background:rgba(20,48,41,0.95);
+    border:2px solid rgba(255,255,255,0.3);
+    border-radius:16px;
+    padding:14px;
+    z-index:100;
+    touch-action:none;
+    box-shadow:0 8px 32px rgba(0,0,0,0.6);
+}
+#hud-props-panel.hidden { display:none; }
+#hud-props-title {
+    font-size:16px;
+    font-weight:800;
+    color:#fff;
+    margin-bottom:12px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+}
+.hud-prop-row {
+    margin-bottom:14px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+.hud-prop-row label {
+    color:#fff;
+    font-size:14px;
+    min-width:90px;
+}
+.hud-prop-row input[type=range] {
+    flex:1;
+    accent-color:#3ddc84;
+}
+#hud-props-close {
+    margin-top:12px;
+    padding:10px 20px;
+    border:none;
+    border-radius:8px;
+    background:#3ddc84;
+    color:#000;
+    font-weight:800;
+    cursor:pointer;
+}
+
+.hud-drag {
+    position:absolute;
+    width:92px;
+    height:92px;
+    border-radius:50%;
+    border:3px solid rgba(255,255,255,0.55);
+    background:radial-gradient(circle at 35% 30%, #ff6b83, #e94560 55%, #b82f49);
+    color:#fff;
+    font-size:12px;
+    font-weight:800;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:move;
+    touch-action:none;
+    box-shadow:0 6px 18px rgba(0,0,0,0.35);
+    z-index:5;
+    user-select:none;
+}
+.hud-drag.power { width:70px; height:70px; font-size:10px; background:#0e2636; border-color:rgba(255,255,255,0.5); }
+.hud-drag.fs { width:44px; height:44px; font-size:10px; background:rgba(0,0,0,0.35); border-color:rgba(255,255,255,0.35); }
+.hud-drag.settings { width:44px; height:44px; font-size:10px; background:rgba(0,0,0,0.35); border-color:rgba(255,255,255,0.35); }
+.hud-drag.joystick { width:120px; height:120px; font-size:10px; border:3px solid rgba(255,255,255,0.35); background:rgba(255,255,255,0.08); border-radius:50%; }
+
+.hud-drag:active { filter:brightness(1.2); }
+
+/* Linhas de tecla no menu */
+.key-row {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:10px 0;
+    border-bottom:1px solid rgba(255,255,255,0.08);
+    cursor:pointer;
+}
+.key-row:last-child { border-bottom:none; }
+.key-label {
+    color:#fff;
+    font-size:14px;
+}
+.key-value {
+    color:rgba(255,255,255,0.7);
+    font-size:13px;
+    background:rgba(255,255,255,0.08);
+    padding:4px 10px;
+    border-radius:6px;
+    border:1px solid rgba(255,255,255,0.2);
+}
+.key-row.editing .key-value {
+    background:#3ddc84;
+    color:#000;
+    border-color:#3ddc84;
+    animation:keyPulse 0.8s ease-in-out infinite;
+}
+@keyframes keyPulse {
+    0%, 100% { opacity:1; }
+    50% { opacity:0.6; }
+}
+
+/* ===== LOBBY ===== */
+#lobby {
+    position:fixed;
+    inset:0;
+    z-index:100;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    background:rgba(0,0,0,0.45);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Preview do jogador no centro do lobby */
+.lobby-preview {
+    position:relative;
+    width:320px;
+    height:180px;
+    margin-bottom:4px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    perspective:800px;
+}
+
+.lobby-ball {
+    width:70px;
+    height:70px;
+    border-radius:50%;
+    background:#fff;
+    border:3px solid #20202a;
+    box-shadow:0 0 30px rgba(255,255,255,0.6), inset 0 0 15px rgba(0,0,0,0.2);
+    position:relative;
+    animation:lobbyBallFloat 3s ease-in-out infinite;
+}
+
+.lobby-ball::before {
+    content:'';
+    position:absolute;
+    inset:8px;
+    border-radius:50%;
+    border:2px solid rgba(0,0,0,0.2);
+}
+
+.lobby-ball::after {
+    content:'';
+    position:absolute;
+    top:16px; left:16px;
+    width:18px; height:18px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.8);
+    filter:blur(1px);
+}
+
+.lobby-player-label {
+    position:absolute;
+    bottom:-45px;
+    left:50%;
+    transform:translateX(-50%);
+    font-weight:800;
+    letter-spacing:2px;
+    font-size:16px;
+    color:#fff;
+    text-shadow:0 2px 4px rgba(0,0,0,0.6);
+    white-space:nowrap;
+}
+
+@keyframes lobbyBallFloat {
+    0%, 100% { transform:translateY(0) rotate(0deg); }
+    25% { transform:translateY(-12px) rotate(5deg); }
+    50% { transform:translateY(0) rotate(0deg); }
+    75% { transform:translateY(-8px) rotate(-5deg); }
+}
+
+/* Caixa de texto do nome */
+.lobby-name-box {
+    margin-bottom:30px;
+    text-align:center;
+}
+
+.lobby-name-input {
+    background:rgba(255,255,255,0.1);
+    border:2px solid rgba(255,255,255,0.4);
+    border-radius:10px;
+    color:#fff;
+    font-size:20px;
+    font-weight:800;
+    letter-spacing:1px;
+    padding:12px 24px;
+    text-align:center;
+    outline:none;
+    transition:border-color 0.2s, box-shadow 0.2s;
+    font-family:'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.lobby-name-input::placeholder {
+    color:rgba(255,255,255,0.35);
+}
+
+.lobby-name-input:focus {
+    border-color:#fff;
+    box-shadow:0 0 15px rgba(255,255,255,0.3);
+}
+
+/* Modos de jogo nos lados */
+.lobby-modes {
+    position:absolute;
+    top:50%;
+    width:100%;
+    display:flex;
+    justify-content:space-between;
+    padding:0 60px;
+    transform:translateY(-50%);
+    pointer-events:none;
+}
+
+.lobby-mode {
+    pointer-events:auto;
+    background:rgba(255,255,255,0.08);
+    border:2px solid rgba(255,255,255,0.25);
+    border-radius:14px;
+    padding:18px 28px;
+    min-width:140px;
+    text-align:center;
+    cursor:pointer;
+    transition:all 0.2s;
+    backdrop-filter:blur(4px);
+}
+
+.lobby-mode:hover {
+    background:rgba(255,255,255,0.18);
+    border-color:rgba(255,255,255,0.5);
+    transform:translateY(-3px);
+}
+
+.lobby-mode.selected {
+    background:rgba(255,255,255,0.2);
+    border-color:#fff;
+    box-shadow:0 0 20px rgba(255,255,255,0.25);
+}
+
+.lobby-mode-title {
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:rgba(255,255,255,0.7);
+    margin-bottom:8px;
+    display:block;
+}
+
+.lobby-mode-label {
+    font-size:17px;
+    font-weight:800;
+    color:#fff;
+    display:block;
+}
+
+/* Botão de jogar */
+.lobby-play-btn {
+    margin-top:10px;
+    padding:16px 48px;
+    border:none;
+    border-radius:12px;
+    background:#fff;
+    color:#111;
+    font-size:18px;
+    font-weight:900;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    cursor:pointer;
+    transition:all 0.2s;
+    box-shadow:0 4px 15px rgba(255,255,255,0.3);
+}
+
+.lobby-play-btn:hover {
+    background:#ffe066;
+    transform:scale(1.05);
+    box-shadow:0 6px 25px rgba(255,224,102,0.4);
+}
+
+.lobby-play-btn:active {
+    transform:scale(0.96);
+}
+
+/* Botões de canto no lobby (menores) */
+#lobby .lobby-corner-btns {
+    position:absolute;
+    top:16px;
+    right:16px;
+    display:flex;
+    gap:12px;
+    z-index:110;
+}
+
+.lobby-corner-btn {
+    width:44px;
+    height:44px;
+    border:none;
+    border-radius:10px;
+    background:rgba(0,0,0,0.35);
+    border:1px solid rgba(255,255,255,0.3);
+    color:#fff;
+    font-size:18px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:all 0.2s;
+}
+
+.lobby-corner-btn:hover {
+    background:rgba(255,255,255,0.15);
+    border-color:rgba(255,255,255,0.5);
+}
+
+/* Esconde elementos do jogo quando no lobby */
+body.in-lobby #joystick-trigger,
+body.in-lobby #joystick-area,
+body.in-lobby #kick-btn,
+body.in-lobby #power-btn,
+body.in-lobby #fullscreen-btn,
+body.in-lobby #settings-btn,
+body.in-lobby #hint,
+body.in-lobby #goal-banner,
+body.in-lobby #settings-overlay,
+body.in-lobby #hud-customizer {
+    display:none !important;
+}
+
+body.in-lobby canvas {
+    filter:blur(12px) brightness(0.5);
+    -webkit-filter:blur(12px) brightness(0.5);
+}
+
+/* Título do jogo no lobby */
+.lobby-title {
+    position:absolute;
+    top:24px;
+    left:50%;
+    transform:translateX(-50%);
+    font-size:34px;
+    font-weight:900;
+    letter-spacing:3px;
+    color:#fff;
+    text-shadow:0 4px 12px rgba(0,0,0,0.6);
+    text-transform:uppercase;
+    z-index:105;
+}
+
+
+/* ===== ONLINE / SALA ===== */
+.lobby-online {
+    margin-top:16px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+    z-index:105;
+}
+.lobby-online-row {
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:center;
+    flex-wrap:wrap;
+}
+.lobby-online-btn {
+    padding:12px 22px;
+    border:2px solid rgba(255,255,255,0.35);
+    border-radius:10px;
+    background:rgba(255,255,255,0.08);
+    color:#fff;
+    font-size:13px;
+    font-weight:800;
+    letter-spacing:1.4px;
+    cursor:pointer;
+    transition:all 0.2s;
+    text-transform:uppercase;
+    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.lobby-online-btn:hover {
+    background:rgba(255,255,255,0.2);
+    border-color:#fff;
+}
+.lobby-online-btn:active { transform:scale(0.97); }
+.lobby-code-input {
+    width:108px;
+    padding:12px 8px;
+    text-align:center;
+    background:rgba(0,0,0,0.35);
+    border:2px solid rgba(255,255,255,0.3);
+    border-radius:10px;
+    color:#fff;
+    font-size:16px;
+    font-weight:900;
+    letter-spacing:4px;
+    text-transform:uppercase;
+    outline:none;
+    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.lobby-code-input:focus { border-color:#3ddc84; }
+.lobby-code-input::placeholder { color:rgba(255,255,255,0.3); letter-spacing:2px; }
+.lobby-online-hint {
+    font-size:11px;
+    color:rgba(255,255,255,0.45);
+    letter-spacing:0.5px;
+}
+
+#room-overlay {
+    position:fixed;
+    inset:0;
+    z-index:150;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    background:rgba(0,0,0,0.5);
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+#room-overlay.hidden { display:none; }
+#room-panel {
+    width:min(640px, 96vw);
+    max-height:92vh;
+    overflow:auto;
+    background:rgba(12,34,29,0.94);
+    border:2px solid rgba(255,255,255,0.25);
+    border-radius:18px;
+    padding:22px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.6);
+}
+.room-head { text-align:center; margin-bottom:10px; }
+.room-code-label {
+    font-size:11px;
+    letter-spacing:2px;
+    color:rgba(255,255,255,0.55);
+    font-weight:800;
+}
+.room-code {
+    font-size:38px;
+    font-weight:900;
+    letter-spacing:10px;
+    color:#ffe066;
+    margin:2px 0 8px;
+    text-shadow:0 4px 18px rgba(255,224,102,0.35);
+    line-height:1.1;
+}
+.room-mini-btn {
+    padding:8px 16px;
+    border:1px solid rgba(255,255,255,0.3);
+    border-radius:8px;
+    background:rgba(255,255,255,0.08);
+    color:#fff;
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:1.2px;
+    cursor:pointer;
+    text-transform:uppercase;
+}
+.room-mini-btn:hover { background:rgba(255,255,255,0.18); }
+.room-status {
+    text-align:center;
+    font-size:13px;
+    color:rgba(255,255,255,0.65);
+    margin-bottom:16px;
+    min-height:18px;
+}
+.room-teams {
+    display:flex;
+    gap:12px;
+    align-items:stretch;
+}
+.room-team {
+    flex:1;
+    min-width:0;
+    background:rgba(255,255,255,0.05);
+    border:2px solid rgba(255,255,255,0.12);
+    border-radius:14px;
+    padding:10px;
+}
+.room-team-a { border-color:rgba(233,69,96,0.5); }
+.room-team-b { border-color:rgba(61,155,255,0.55); }
+.room-team-title {
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:1.6px;
+    text-transform:uppercase;
+    color:rgba(255,255,255,0.8);
+    margin-bottom:8px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+.room-team-a .room-team-title { color:#ff8fa2; }
+.room-team-b .room-team-title { color:#8fc6ff; }
+.room-team-title span { color:rgba(255,255,255,0.45); font-size:10px; letter-spacing:1px; }
+.room-vs {
+    align-self:center;
+    font-weight:900;
+    font-size:14px;
+    color:rgba(255,255,255,0.4);
+    letter-spacing:1px;
+}
+.room-slot {
+    min-height:58px;
+    border-radius:10px;
+    padding:8px 10px;
+    margin-bottom:8px;
+    background:rgba(0,0,0,0.22);
+    border:2px solid rgba(255,255,255,0.1);
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:3px;
+}
+.room-slot:last-child { margin-bottom:0; }
+.room-slot.empty {
+    border:2px dashed rgba(255,255,255,0.16);
+    background:transparent;
+    color:rgba(255,255,255,0.3);
+    font-size:12px;
+    cursor:pointer;
+    align-items:center;
+    text-align:center;
+}
+.room-slot.empty:hover { border-color:rgba(61,220,132,0.6); color:rgba(255,255,255,0.7); }
+.room-slot.me {
+    background:rgba(61,220,132,0.12);
+    border-color:rgba(61,220,132,0.55);
+}
+.room-slot.host { box-shadow:inset 0 0 0 1px rgba(255,224,102,0.35); }
+.slot-name {
+    font-size:14px;
+    font-weight:800;
+    color:#fff;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+.slot-tag {
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:rgba(255,255,255,0.5);
+}
+.slot-tag.ready { color:#3ddc84; }
+.slot-tag.crown { color:#ffe066; }
+.slot-switch {
+    align-self:flex-start;
+    margin-top:2px;
+    padding:3px 9px;
+    border-radius:6px;
+    border:1px solid rgba(255,255,255,0.25);
+    background:rgba(255,255,255,0.08);
+    color:#fff;
+    font-size:10px;
+    font-weight:800;
+    cursor:pointer;
+}
+.slot-switch:hover { background:rgba(255,255,255,0.2); }
+#room-actions {
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    margin-top:18px;
+    flex-wrap:wrap;
+}
+.room-btn {
+    padding:13px 24px;
+    border:2px solid rgba(255,255,255,0.3);
+    border-radius:10px;
+    background:rgba(255,255,255,0.08);
+    color:#fff;
+    font-size:14px;
+    font-weight:900;
+    letter-spacing:1.4px;
+    text-transform:uppercase;
+    cursor:pointer;
+    transition:all 0.15s;
+}
+.room-btn:hover { background:rgba(255,255,255,0.18); }
+.room-btn.primary { background:#3ddc84; border-color:#3ddc84; color:#062218; }
+.room-btn.primary:hover { filter:brightness(1.08); }
+.room-btn.hidden { display:none; }
+#room-hint {
+    margin-top:14px;
+    text-align:center;
+    font-size:12px;
+    line-height:1.5;
+    color:rgba(255,255,255,0.5);
+}
+#room-hint code {
+    color:#ffe066;
+    font-size:12px;
+    word-break:break-all;
+}
+
+#leave-match-btn {
+    position:fixed;
+    top:12px;
+    left:12px;
+    z-index:60;
+    padding:10px 16px;
+    border:1px solid rgba(255,255,255,0.35);
+    border-radius:10px;
+    background:rgba(0,0,0,0.4);
+    color:#fff;
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:1.2px;
+    cursor:pointer;
+    display:none;
+    text-transform:uppercase;
+}
+#leave-match-btn.show { display:block; }
+#leave-match-btn:hover { background:rgba(255,255,255,0.16); }
+
+#net-toast {
+    position:fixed;
+    left:50%;
+    top:16px;
+    transform:translateX(-50%) translateY(-8px);
+    z-index:400;
+    padding:11px 20px;
+    border-radius:10px;
+    background:rgba(10,25,20,0.95);
+    border:1px solid rgba(255,255,255,0.25);
+    color:#fff;
+    font-size:13px;
+    font-weight:700;
+    max-width:90vw;
+    text-align:center;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.2s, transform 0.2s;
+}
+#net-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+body.in-lobby #leave-match-btn { display:none !important; }
+
+@media (max-width:700px) {
+    .lobby-modes { display:none; }
+    .lobby-online { margin-top:12px; }
+    .lobby-play-btn { margin-top:8px; }
+    .room-teams { flex-direction:column; }
+    .room-vs { padding:2px 0; }
+    .room-code { font-size:30px; letter-spacing:7px; }
+    #room-panel { padding:16px; }
+}
+
+
+/* Telas baixas: celular deitado / janelas pequenas */
+@media (max-height: 540px) {
+    .lobby-title { font-size:30px; }
+    .lobby-preview { height:110px; margin-bottom:0; }
+    .lobby-ball { width:56px; height:56px; }
+    .lobby-name-box { margin-bottom:12px; }
+    .lobby-name-input { padding:9px 18px; font-size:17px; }
+    .lobby-play-btn { margin-top:2px; padding:11px 36px; font-size:16px; }
+    .lobby-online { margin-top:8px; gap:6px; }
+    .lobby-online-btn { padding:8px 14px; font-size:12px; }
+    .lobby-code-input { padding:8px 6px; font-size:14px; width:92px; }
+    .lobby-online-hint { font-size:10px; }
+
+    .room-head { margin-bottom:4px; }
+    .room-code { font-size:26px; letter-spacing:6px; margin-bottom:4px; }
+    .room-status { margin-bottom:8px; font-size:12px; min-height:14px; }
+    .room-team { padding:7px; }
+    .room-team-title { margin-bottom:5px; }
+    .room-slot { min-height:42px; padding:5px 8px; margin-bottom:5px; }
+    .slot-name { font-size:12px; }
+    .slot-switch { padding:2px 7px; font-size:9px; }
+    #room-actions { margin-top:10px; }
+    .room-btn { padding:9px 16px; font-size:12px; }
+    #room-hint { margin-top:8px; font-size:11px; }
+    #room-panel { padding:14px; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- LOBBY -->
+<div id="lobby" class="hidden">
+    <div class="lobby-title">QUADRA</div>
+
+    <div class="lobby-corner-btns">
+        <button id="lobby-fullscreen-btn" class="lobby-corner-btn" title="Tela cheia">⛶</button>
+        <button id="lobby-settings-btn" class="lobby-corner-btn" title="Configurações">⚙</button>
+    </div>
+
+    <div class="lobby-modes">
+        <div class="lobby-mode selected" id="lobby-mode-1v1">
+            <span class="lobby-mode-title">Modo de jogo</span>
+            <span class="lobby-mode-label">1 VS 1 · 2 VS 2</span>
+        </div>
+    </div>
+
+    <div class="lobby-preview">
+        <div class="lobby-ball" id="lobby-ball"></div>
+    </div>
+
+    <div class="lobby-name-box">
+        <input type="text" id="lobby-name-input" class="lobby-name-input" placeholder="Seu nome" maxlength="12">
+    </div>
+
+    <button id="lobby-play-btn" class="lobby-play-btn">JOGAR</button>
+
+    <div class="lobby-online">
+        <div class="lobby-online-row">
+            <button id="lobby-create-btn" class="lobby-online-btn">Criar sala</button>
+            <span class="lobby-online-hint">ou</span>
+            <input id="lobby-code-input" class="lobby-code-input" placeholder="CÓDIGO" maxlength="4" autocomplete="off" spellcheck="false">
+            <button id="lobby-join-btn" class="lobby-online-btn">Entrar</button>
+        </div>
+        <span class="lobby-online-hint">2 a 4 jogadores · 1v1 ou 2v2</span>
+    </div>
+</div>
+
+<!-- LOBBY CONFIGURATIONS OVERLAY -->
+<div id="lobby-settings-overlay" class="hidden" aria-hidden="true">
+    <div id="lobby-settings-menu" role="dialog" aria-modal="true" aria-label="Configurações do Lobby">
+        <h2 id="lobby-settings-title">Configurações</h2>
+        <p class="menu-sub">Ajustes de exibição do lobby</p>
+
+        <div id="lobby-settings-main-options">
+            <label class="setting-row">
+                <span class="setting-info">
+                    <span class="setting-title">Tela esticada</span>
+                    <span class="setting-desc">Estica a imagem para preencher a tela toda.</span>
+                </span>
+                <input type="checkbox" id="lobby-opt-stretched" class="switch">
+            </label>
+
+            <div id="lobby-stretch-extra" class="setting-extra hidden">
+                <div class="extra-head">
+                    <span class="setting-title">Intensidade do esticamento</span>
+                    <output id="lobby-stretch-level-value" for="lobby-opt-stretch-level">50%</output>
+                </div>
+                <input type="range" id="lobby-opt-stretch-level" min="0" max="100" step="1" value="50">
+            </div>
+
+            <label class="setting-row">
+                <span class="setting-info">
+                    <span class="setting-title">Clean Mode</span>
+                    <span class="setting-desc">Remove texturas e efeitos visuais.</span>
+                </span>
+                <input type="checkbox" id="lobby-opt-clean" class="switch">
+            </label>
+
+            <div class="setting-extra">
+                <div class="extra-head">
+                    <span class="setting-title">Compensação de rede</span>
+                    <output id="lobby-net-extrap-value" for="lobby-opt-net-extrap">+50 ms</output>
+                </div>
+                <input type="range" id="lobby-opt-net-extrap" min="-100" max="200" step="5" value="50">
+                <span class="setting-desc">Extrapola os jogadores remotos (positivo) ou atrasa (negativo). 0 desliga.</span>
+            </div>
+
+            <label id="lobby-opt-keyboard-mouse-row" class="setting-row">
+                <span class="setting-info">
+                    <span class="setting-title">Teclado e mouse no celular</span>
+                    <span class="setting-desc">Esconde o HUD móvel e usa apenas teclado/mouse.</span>
+                </span>
+                <input type="checkbox" id="lobby-opt-keyboard-mouse" class="switch">
+            </label>
+        </div>
+
+        <button id="lobby-settings-close">FECHAR</button>
+    </div>
+</div>
+
+<div id="room-overlay" class="hidden" aria-hidden="true">
+    <div id="room-panel" role="dialog" aria-modal="true" aria-label="Sala online">
+        <div class="room-head">
+            <div class="room-code-label">CÓDIGO DA SALA</div>
+            <div class="room-code" id="room-code">----</div>
+            <button id="room-copy-btn" class="room-mini-btn">Copiar convite</button>
+        </div>
+        <div class="room-status" id="room-status">Conectando...</div>
+        <div class="room-teams">
+            <div class="room-team room-team-a">
+                <div class="room-team-title">Vermelho <span id="room-count-a">0/2</span></div>
+                <div id="room-team-a" class="room-slots"></div>
+            </div>
+            <div class="room-vs">VS</div>
+            <div class="room-team room-team-b">
+                <div class="room-team-title">Azul <span id="room-count-b">0/2</span></div>
+                <div id="room-team-b" class="room-slots"></div>
+            </div>
+        </div>
+        <div id="room-actions">
+            <button id="room-start-btn" class="room-btn primary hidden">Iniciar partida</button>
+            <button id="room-ready-btn" class="room-btn primary hidden">Estou pronto</button>
+            <button id="room-leave-btn" class="room-btn">Sair da sala</button>
+        </div>
+        <div id="room-hint">Compartilhe o código ou o link do convite com seus amigos.</div>
+    </div>
+</div>
+
+<button id="leave-match-btn">Sair</button>
+<div id="net-toast" role="status" aria-live="polite"></div>
+
+<canvas id="canvas"></canvas>
+
+<div id="joystick-trigger"></div>
+<div id="joystick-area">
+    <div id="joystick-base"></div>
+    <div id="joystick-stick"></div>
+</div>
+
+<button id="kick-btn" aria-label="Chutar">CHUTE</button>
+
+<button id="power-btn" class="ready" title="Super chute: ativa o próximo chute" aria-label="Ativar super chute">
+    <span class="power-fill" id="power-fill"></span>
+    <span class="power-content">
+        <svg class="power-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="currentColor" d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/>
+        </svg>
+        <span class="power-text" id="power-text">SUPER</span>
+    </span>
+</button>
+
+<button id="fullscreen-btn" title="Alternar tela cheia">
+    <span class="icon">⛶</span><span class="label">TELA CHEIA</span>
+</button>
+
+<button id="settings-btn" title="Configurações" aria-label="Abrir configurações">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path fill="currentColor" d="M19.14 12.94a7.4 7.4 0 0 0 .05-.94 7.4 7.4 0 0 0-.05-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.61-.22l-2.39.96a7.1 7.1 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.58.24-1.12.55-1.62.94l-2.39-.96a.5.5 0 0 0-.61.22L2.66 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.03.3-.05.62-.05.94s.02.63.05.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.14.24.42.34.61.22l2.39-.96c.5.39 1.04.7 1.62.94l.36 2.54c.04.24.25.42.5.42h3.84c.25 0 .46-.18.5-.42l.36-2.54c.58-.24 1.12-.55 1.62-.94l2.39.96c.23.09.47 0 .61-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z"/>
+    </svg>
+</button>
+
+<div id="hint">Arraste na metade esquerda para mover · CHUTE perto da bola · Faça gol nas laterais</div>
+
+<div id="goal-banner" aria-hidden="true">
+    <div class="banner-inner">
+        <span class="goal-text">GOLLLLLLL!</span>
+    </div>
+</div>
+
+<div id="settings-overlay" class="hidden" aria-hidden="true">
+    <div id="settings-menu" role="dialog" aria-modal="true" aria-label="Configurações">
+        <h2 id="settings-title">Configurações</h2>
+        <p class="menu-sub">Ajustes de exibição do jogo</p>
+
+        <!-- Opções principais do menu -->
+        <div id="settings-main-options">
+            <label class="setting-row">
+                <span class="setting-info">
+                    <span class="setting-title">Tela esticada</span>
+                    <span class="setting-desc">Estica a imagem para preencher a tela toda, como o 4:3 esticado. Ajuste a intensidade na barra.</span>
+                </span>
+                <input type="checkbox" id="opt-stretched" class="switch">
+            </label>
+
+            <div id="stretch-extra" class="setting-extra hidden">
+                <div class="extra-head">
+                    <span class="setting-title">Intensidade do esticamento</span>
+                    <output id="stretch-level-value" for="opt-stretch-level">50%</output>
+                </div>
+                <input type="range" id="opt-stretch-level" min="0" max="100" step="1" value="50">
+            </div>
+
+            <label class="setting-row">
+                <span class="setting-info">
+                    <span class="setting-title">Clean Mode</span>
+                    <span class="setting-desc">Remove texturas e efeitos visuais. Tudo fica com cor plana.</span>
+                </span>
+                <input type="checkbox" id="opt-clean" class="switch">
+            </label>
+
+            <div class="setting-extra">
+                <div class="extra-head">
+                    <span class="setting-title">Compensação de rede</span>
+                    <output id="net-extrap-value" for="opt-net-extrap">+50 ms</output>
+                </div>
+                <input type="range" id="opt-net-extrap" min="-100" max="200" step="5" value="50">
+                <span class="setting-desc">Extrapola os jogadores remotos no tempo (positivo) ou atrasa (negativo). 0 desliga.</span>
+            </div>
+
+            <button id="settings-hud-btn" style="width:100%;margin-top:8px;padding:13px;border:none;border-radius:10px;background:rgba(255,255,255,0.12);color:#fff;font-size:14px;font-weight:800;letter-spacing:1.2px;cursor:pointer;transition:filter 0.15s;">Personalizar HUD</button>
+            <button id="settings-keys-btn" style="width:100%;margin-top:8px;padding:13px;border:none;border-radius:10px;background:rgba(255,255,255,0.12);color:#fff;font-size:14px;font-weight:800;letter-spacing:1.2px;cursor:pointer;transition:filter 0.15s;">Personalizar teclas</button>
+            <label id="opt-keyboard-mouse-row" class="setting-row hidden">
+                <span class="setting-info">
+                    <span class="setting-title">Teclado e mouse no celular</span>
+                    <span class="setting-desc">Esconde o HUD móvel (joystick, chute e poder) e usa apenas teclado/mouse.</span>
+                </span>
+                <input type="checkbox" id="opt-keyboard-mouse" class="switch">
+            </label>
+        </div>
+
+        <!-- Seção de teclas (mostrada quando clica em Personalizar teclas) -->
+        <div id="keys-section" class="hidden" style="margin-top:16px;">
+            <h3 style="margin:0 0 10px; font-size:15px; letter-spacing:1.5px; text-transform:uppercase; color:#fff;">Personalizar teclas</h3>
+            <div class="key-row" data-key="up">
+                <span class="key-label">Andar para cima</span>
+                <span class="key-value" id="key-val-up">W</span>
+            </div>
+            <div class="key-row" data-key="down">
+                <span class="key-label">Andar para baixo</span>
+                <span class="key-value" id="key-val-down">S</span>
+            </div>
+            <div class="key-row" data-key="left">
+                <span class="key-label">Andar para esquerda</span>
+                <span class="key-value" id="key-val-left">A</span>
+            </div>
+            <div class="key-row" data-key="right">
+                <span class="key-label">Andar para direita</span>
+                <span class="key-value" id="key-val-right">D</span>
+            </div>
+            <div class="key-row" data-key="kick">
+                <span class="key-label">Chutar</span>
+                <span class="key-value" id="key-val-kick">Espaço</span>
+            </div>
+            <div class="key-row" data-key="power">
+                <span class="key-label">Poder (Super chute)</span>
+                <span class="key-value" id="key-val-power">E</span>
+            </div>
+        </div>
+
+        <div style="margin-top:16px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.2);">
+            <div style="font-size:12px; color:rgba(255,255,255,0.5);">Versão: <span id="version-text">v0.04</span></div>
+        </div>
+        <button id="settings-close">FECHAR</button>
+    </div>
+</div>
+
+<!-- Customizador de HUD -->
+<div id="hud-customizer" class="hidden" aria-hidden="true">
+    <div id="hud-canvas"></div>
+    <div id="hud-controls-overlay">
+        <button id="hud-reset">Redefinir</button>
+        <button id="hud-save">Fechar & Salvar</button>
+    </div>
+    <div id="hud-props-panel" class="hidden">
+        <div id="hud-props-title">Ajustar: <span id="hud-props-name">Botão</span></div>
+        <div class="hud-prop-row">
+            <label>Opacidade</label>
+            <input type="range" id="hud-prop-opacity" min="20" max="100" step="5" value="100">
+        </div>
+        <div class="hud-prop-row">
+            <label>Tamanho</label>
+            <input type="range" id="hud-prop-size" min="50" max="150" step="10" value="100">
+        </div>
+        <button id="hud-props-close">Fechar ajustes</button>
+    </div>
+</div>
+
+<script src="sim.js"></script>
+<script>
+window.addEventListener('error', (e) => {
+    const d = document.createElement('div');
+    d.style.position='fixed';
+    d.style.inset='0';
+    d.style.background='rgba(0,0,0,0.85)';
+    d.style.color='#ff4d4d';
+    d.style.padding='20px';
+    d.style.zIndex='99999';
+    d.style.fontFamily='monospace';
+    d.style.whiteSpace='pre-wrap';
+    d.style.fontSize='14px';
+    d.textContent = 'ERRO JAVASCRIPT:\n' + (e.message || (e.error && e.error.message) || String(e)) + '\nLinha: ' + e.lineno + '\nArquivo: ' + e.filename;
+    document.body.appendChild(d);
+    console.error(e);
+    return true;
+});
+
+// ============================================================
+//  ESTADO DO LOBBY
+// ============================================================
+let inLobby = true;
+let lobbyPlayerName = '';
+let lobbyBallColor = '#ffffff';
+
+const lobbyEl = document.getElementById('lobby');
+const lobbyNameInput = document.getElementById('lobby-name-input');
+const lobbyBall = document.getElementById('lobby-ball');
+const lobbyPlayBtn = document.getElementById('lobby-play-btn');
+const lobbyFullscreenBtn = document.getElementById('lobby-fullscreen-btn');
+const lobbySettingsBtn = document.getElementById('lobby-settings-btn');
+
+// Inicializa o nome do jogador (vazio por padrão)
+if (lobbyNameInput) {
+    lobbyNameInput.value = '';
+    lobbyNameInput.addEventListener('input', (e) => {
+        lobbyPlayerName = e.target.value || '';
+    });
+}
+
+// Inicializa a cor da bola do lobby (padrão branco)
+if (lobbyBall) {
+    lobbyBall.style.background = lobbyBallColor;
+}
+
+// Abre/fecha o lobby
+function openLobby() {
+    inLobby = true;
+    document.body.classList.add('in-lobby');
+    if (lobbyEl) lobbyEl.classList.remove('hidden');
+    // Pausa o loop do jogo (render ainda roda para mostrar o fundo embaçado)
+}
+
+function closeLobby() {
+    inLobby = false;
+    document.body.classList.remove('in-lobby');
+    if (lobbyEl) lobbyEl.classList.add('hidden');
+    // Garante que o HUD móvel apareça ao sair do lobby
+    keyboardActive = false;
+    updateHUDVisibility();
+}
+
+// Botão jogar (treino solo)
+if (lobbyPlayBtn) {
+    lobbyPlayBtn.addEventListener('click', () => {
+        mode = 'solo';
+        startSoloMatch();
+    });
+}
+
+// Botão tela cheia no lobby - alterna entre entrar e sair da tela cheia
+if (lobbyFullscreenBtn) {
+    lobbyFullscreenBtn.addEventListener('click', () => {
+        const doc = document;
+        const fsEl = doc.fullscreenElement || doc.webkitFullscreenElement || doc.msFullscreenElement;
+        if (fsEl) {
+            if (doc.exitFullscreen) doc.exitFullscreen();
+            else if (doc.webkitExitFullscreen) doc.webkitExitFullscreen();
+            else if (doc.msExitFullscreen) doc.msExitFullscreen();
+            return;
+        }
+        const el = document.documentElement;
+        const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+        if (req) {
+            const p = req.call(el);
+            if (p && typeof p.catch === 'function') p.catch(() => {});
+        }
+    });
+}
+
+// ===== Configurações do lobby =====
+const lobbySettingsOverlay = document.getElementById('lobby-settings-overlay');
+const lobbySettingsClose = document.getElementById('lobby-settings-close');
+const lobbyOptStretched = document.getElementById('lobby-opt-stretched');
+const lobbyStretchExtra = document.getElementById('lobby-stretch-extra');
+const lobbyStretchLevel = document.getElementById('lobby-opt-stretch-level');
+const lobbyStretchLevelValue = document.getElementById('lobby-stretch-level-value');
+const lobbyOptClean = document.getElementById('lobby-opt-clean');
+const lobbyNetExtrap = document.getElementById('lobby-opt-net-extrap');
+const lobbyNetExtrapValue = document.getElementById('lobby-net-extrap-value');
+const lobbyOptKeyboardMouse = document.getElementById('lobby-opt-keyboard-mouse');
+const lobbyOptKeyboardMouseRow = document.getElementById('lobby-opt-keyboard-mouse-row');
+
+function syncLobbySettingsUI() {
+    if (!lobbySettingsOverlay) return;
+    if (lobbyOptStretched) lobbyOptStretched.checked = !!settings.stretched;
+    if (lobbyOptClean) lobbyOptClean.checked = !!settings.clean;
+    if (lobbyOptKeyboardMouse) lobbyOptKeyboardMouse.checked = !!settings.keyboardMouse;
+    if (lobbyStretchExtra) lobbyStretchExtra.classList.toggle('hidden', !settings.stretched);
+    if (lobbyStretchLevel) lobbyStretchLevel.value = settings.stretchLevel;
+    if (lobbyStretchLevelValue) lobbyStretchLevelValue.textContent = settings.stretchLevel + '%';
+    if (lobbyNetExtrap) lobbyNetExtrap.value = settings.netExtrap;
+    if (lobbyNetExtrapValue) lobbyNetExtrapValue.textContent = formatNetExtrap(settings.netExtrap);
+    if (lobbyOptKeyboardMouseRow) {
+        if (isMobile) lobbyOptKeyboardMouseRow.classList.remove('hidden');
+        else lobbyOptKeyboardMouseRow.classList.add('hidden');
+    }
+}
+
+function openLobbySettings() {
+    syncLobbySettingsUI();
+    if (lobbySettingsOverlay) {
+        lobbySettingsOverlay.classList.remove('hidden');
+        lobbySettingsOverlay.setAttribute('aria-hidden', 'false');
+    }
+    try { if (lobbySettingsClose) lobbySettingsClose.focus({ preventScroll: true }); } catch (err) {}
+}
+
+function closeLobbySettings() {
+    if (lobbySettingsOverlay) {
+        lobbySettingsOverlay.classList.add('hidden');
+        lobbySettingsOverlay.setAttribute('aria-hidden', 'true');
+    }
+}
+
+if (lobbySettingsBtn) {
+    lobbySettingsBtn.addEventListener('click', openLobbySettings);
+}
+if (lobbySettingsClose) {
+    lobbySettingsClose.addEventListener('click', closeLobbySettings);
+}
+if (lobbySettingsOverlay) {
+    lobbySettingsOverlay.addEventListener('pointerdown', (e) => {
+        if (e.target === lobbySettingsOverlay) closeLobbySettings();
+    });
+}
+
+// Aplica as opções do lobby usando os mesmos handlers do menu principal
+if (lobbyOptStretched) {
+    lobbyOptStretched.addEventListener('change', () => {
+        if (typeof optStretched !== 'undefined' && optStretched) {
+            optStretched.checked = lobbyOptStretched.checked;
+            optStretched.dispatchEvent(new Event('change'));
+        }
+        syncLobbySettingsUI();
+    });
+}
+if (lobbyStretchLevel) {
+    lobbyStretchLevel.addEventListener('input', () => {
+        if (lobbyStretchLevelValue) lobbyStretchLevelValue.textContent = lobbyStretchLevel.value + '%';
+        if (typeof stretchLevel !== 'undefined' && stretchLevel) {
+            stretchLevel.value = lobbyStretchLevel.value;
+            stretchLevel.dispatchEvent(new Event('input'));
+        }
+    });
+    lobbyStretchLevel.addEventListener('change', () => {
+        if (typeof stretchLevel !== 'undefined' && stretchLevel) {
+            stretchLevel.dispatchEvent(new Event('change'));
+        }
+    });
+}
+if (lobbyOptClean) {
+    lobbyOptClean.addEventListener('change', () => {
+        if (typeof optClean !== 'undefined' && optClean) {
+            optClean.checked = lobbyOptClean.checked;
+            optClean.dispatchEvent(new Event('change'));
+        }
+    });
+}
+if (lobbyNetExtrap) {
+    lobbyNetExtrap.addEventListener('input', () => setNetExtrap(lobbyNetExtrap.value));
+}
+if (lobbyOptKeyboardMouse) {
+    lobbyOptKeyboardMouse.addEventListener('change', () => {
+        if (typeof optKeyboardMouse !== 'undefined' && optKeyboardMouse) {
+            optKeyboardMouse.checked = lobbyOptKeyboardMouse.checked;
+            optKeyboardMouse.dispatchEvent(new Event('change'));
+        }
+    });
+}
+
+// Inicia com o lobby aberto
+openLobby();
+
+// ============================================================
+//  CONFIG
+// ============================================================
+const SIM = window.QuadraSim;
+if (!SIM) throw new Error('sim.js não carregou');
+
+const WORLD = SIM.WORLD;
+const COURT = SIM.COURT;
+const GOAL = SIM.GOAL;
+const PLAYER = SIM.PLAYER;
+const BALL = SIM.BALL;
+const KICK = SIM.KICK;
+const POWER = SIM.POWER;
+const SUPER_CHARGE_DURATION = SIM.SUPER_CHARGE_DURATION;
+const CROWN_DURATION = SIM.CROWN_DURATION;
+const GOAL_DURATION = SIM.GOAL_DURATION;
+const GOAL_DELAY = SIM.GOAL_DELAY;
+const TEAM_COLORS = SIM.TEAM_COLORS;
+const VERSION = SIM.VERSION;
+
+const SUPER_TRAIL = {
+    duration: 0.75,       // por quanto tempo a bola solta a trilha
+    fade: 0.3,            // tempo de desaparecimento de cada ponto
+};
+
+// Rabiscos/riscos soltos do jogador durante o superchute (estilo desenho à mão)
+let playerRabiscos = [];  // {x, y, vx, vy, life, maxLife, angle, len, color}
+
+// Marcas de terra (chuteira na quadra) deixadas pelo jogador durante a carga
+let groundMarks = [];     // {x, y, life, maxLife, size, angle, color}
+
+const PLAYER_RABISCO = {
+    duration: 1.2,        // tempo total que os riscos ficam na tela
+    fade: 0.4,            // velocidade de sumir de cada risco
+    maxPoints: 80,        // limite de riscos ativos
+};
+
+const GROUND_MARK = {
+    duration: 2.0,        // tempo que a marca de terra fica no chão
+    maxPoints: 100,       // limite de marcas no chão
+    stepLen: 12,          // distância entre marcas
+};
+
+// ============================================================
+//  CONFIGURAÇÕES DO USUÁRIO
+// ============================================================
+const settings = {
+    stretched: false,  // tela esticada (preenche a tela deformando a proporção)
+    stretchLevel: 50,  // intensidade do esticamento (0..100)
+    clean: false,      // clean mode: sem texturas nem efeitos visuais
+    // Compensação de rede para jogadores remotos, em ms.
+    // Positivo extrapola (adia o relógio de render), negativo atrasa.
+    netExtrap: 50,
+    hudOpacity: 100,   // opacidade dos botões do HUD (0..100)
+    hudSize: 100,      // tamanho dos botões do HUD (50..150 %)
+    hud: {             // posições customizadas dos botões do HUD (x, y em px da tela)
+        kick: { x: window.innerWidth - 112, y: window.innerHeight - 114, opacity: 100, size: 100 },
+        power: { x: window.innerWidth - 66, y: window.innerHeight - 172, opacity: 100, size: 100 },
+        fullscreen: { x: window.innerWidth - 72, y: 34, opacity: 100, size: 100 },
+        settings: { x: 34, y: 34, opacity: 100, size: 100 },
+        joystick: { x: window.innerWidth * 0.25, y: window.innerHeight * 0.6, opacity: 100, size: 100 },
+    },
+    customHud: false,
+
+    // Teclado
+    keyboard: {
+        enabled: false,
+        keys: {
+            up: 'KeyW',
+            down: 'KeyS',
+            left: 'KeyA',
+            right: 'KeyD',
+            kick: 'Space',
+            power: 'KeyE',
+        },
+    },
+
+    // Teclado e mouse no celular (esconde HUD móvel)
+    keyboardMouse: false,
+
+    // ativa as posições customizadas salvas
+};
+
+// Esticamento horizontal extra no nível máximo (20%).
+// Limitado para a quadra continuar inteira dentro da tela.
+const STRETCH_MAX = 0.20;
+
+function loadSettings() {
+    try {
+        const raw = localStorage.getItem('quadra-settings');
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        settings.stretched = !!saved.stretched;
+        settings.clean = !!saved.clean;
+        settings.keyboardMouse = !!saved.keyboardMouse;
+        if (typeof saved.netExtrap === 'number' && isFinite(saved.netExtrap)) {
+            settings.netExtrap = Math.min(200, Math.max(-100, Math.round(saved.netExtrap / 5) * 5));
+        }
+        if (typeof saved.stretchLevel === 'number' && isFinite(saved.stretchLevel)) {
+            settings.stretchLevel = Math.min(100, Math.max(0, Math.round(saved.stretchLevel)));
+        }
+    } catch (err) { /* ignora */ }
+}
+
+function saveSettings() {
+    try {
+        localStorage.setItem('quadra-settings', JSON.stringify(settings));
+    } catch (err) { /* ignora */ }
+}
+
+function formatNetExtrap(ms) {
+    return (ms > 0 ? '+' : '') + Math.round(ms) + ' ms';
+}
+
+function setNetExtrap(ms) {
+    const v = Math.min(200, Math.max(-100, Math.round((Number(ms) || 0) / 5) * 5));
+    settings.netExtrap = v;
+
+    const main = document.getElementById('opt-net-extrap');
+    const mainLabel = document.getElementById('net-extrap-value');
+    if (main) main.value = v;
+    if (mainLabel) mainLabel.textContent = formatNetExtrap(v);
+
+    if (lobbyNetExtrap) lobbyNetExtrap.value = v;
+    if (lobbyNetExtrapValue) lobbyNetExtrapValue.textContent = formatNetExtrap(v);
+    saveSettings();
+}
+
+loadSettings();
+
+// ============================================================
+//  CANVAS / VIEWPORT
+// ============================================================
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const view = { w: 0, h: 0, dpr: 1, scaleX: 1, scaleY: 1, offX: 0, offY: 0 };
+
+function updateView() {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    if (settings.stretched) {
+        // Esticada literal (estilo 4:3 esticado): preenche a tela deformando
+        // a proporção. A barra adiciona esticamento horizontal e recorta as
+        // sobras laterais, mantendo a quadra inteira visível.
+        const t = Math.min(100, Math.max(0, settings.stretchLevel)) / 100;
+        const scaleY = vh / WORLD.h;
+        const scaleX = (vw / WORLD.w) * (1 + STRETCH_MAX * t);
+        view.scaleX = scaleX;
+        view.scaleY = scaleY;
+        view.offX = (vw - WORLD.w * scaleX) / 2;
+        view.offY = 0;
+    } else {
+        const scale = Math.min(vw / WORLD.w, vh / WORLD.h);
+        view.scaleX = scale;
+        view.scaleY = scale;
+        view.offX = (vw - WORLD.w * scale) / 2;
+        view.offY = (vh - WORLD.h * scale) / 2;
+    }
+
+    view.w = vw;
+    view.h = vh;
+}
+
+function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    canvas.width  = Math.round(vw * dpr);
+    canvas.height = Math.round(vh * dpr);
+    canvas.style.width  = vw + 'px';
+    canvas.style.height = vh + 'px';
+
+    view.dpr = dpr;
+    updateView();
+    applyHUDPositions();
+}
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 120));
+
+// ============================================================
+//  ESTADO
+// ============================================================
+let match = null;             // partida (simulação compartilhada)
+let matchState = null;        // estado interno da partida
+let players = [];             // jogadores da partida
+let ball = null;              // bola da partida
+let player = null;            // jogador local (deste navegador)
+let localPlayerId = null;
+
+let mode = 'solo';            // solo | host | guest
+let matchRunning = false;     // simulação ativa
+let startedPlaying = false;   // saiu do lobby e entrou em jogo
+
+const playerViews = new Map(); // efeitos visuais por jogador
+const remoteInputs = new Map(); // inputs recebidos pelo host
+
+let pendingKick = false;
+let pendingPower = false;
+
+// Efeitos visuais da partida
+let kickAuras = [];
+let particles = [];
+let waves = [];
+let shakeTime = 0;
+let shakeDuration = 0;
+let shakeMagnitude = 0;
+
+let superTrail = [];
+let superTrailTimer = 0;
+let guestKickUntil = 0;
+let guestPowerUntil = 0;
+
+// Client-side prediction (estilo Haxball)
+let guestInputSeq = 0;
+let guestLastAckedSeq = -1;    // último input confirmado pelo host
+let hostLastInputSeq = -1;     // último input deste guest que o host processou
+const lastInputSeqByClient = {}; // host: último seq efetivamente aplicado por cliente
+const pendingInputs = [];      // { seq, dt, postX, postY, postVx, postVy }
+let netForceSyncFrames = 0;    // snap completo após gol/reset/phase change
+let lastFrameArrival = 0;      // último frame do host recebido (para medir jitter)
+let netRtt = 0;
+let netJitter = 0;
+let netRenderDelay = 0;        // atraso de render adaptativo (ms)
+let lastNetPhase = null;
+
+function findPlayer(id) {
+    for (let i = 0; i < players.length; i++) {
+        if (players[i].id === id) return players[i];
+    }
+    return null;
+}
+
+function getView(id) {
+    let v = playerViews.get(id);
+    if (!v) {
+        v = {
+            fade: 0,
+            flash: 0,
+            crownPop: 0,
+            lastCrown: 0,
+            groundAccum: 0,
+        };
+        playerViews.set(id, v);
+    }
+    return v;
+}
+
+// ============================================================
+//  FÍSICA
+// ============================================================
+function playerInRange(p) {
+    if (!p || !ball) return false;
+    const dx = ball.x - p.x;
+    const dy = ball.y - p.y;
+    return Math.hypot(dx, dy) <= p.r + ball.r + KICK.range;
+}
+
+function addShake(mag, dur) {
+    if (settings.clean) return; // Clean Mode: sem tremida
+    shakeMagnitude = mag;
+    shakeDuration = dur;
+    shakeTime = dur;
+}
+
+function spawnExplosion(x, y) {
+    if (settings.clean) return; // Clean Mode: sem explosão
+
+    const colors = ['#ffffff', '#ffe066', '#ffb347', '#ff7043', '#ff4d6d'];
+
+    for (let i = 0; i < 28; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const sp = 70 + Math.random() * 360;
+        const life = 0.4 + Math.random() * 0.5;
+
+        particles.push({
+            x, y,
+            vx: Math.cos(a) * sp,
+            vy: Math.sin(a) * sp,
+            life,
+            maxLife: life,
+            size: 2 + Math.random() * 4.5,
+            drag: 2.5 + Math.random() * 2.5,
+            color: colors[(Math.random() * colors.length) | 0],
+        });
+    }
+
+    waves.push({ x, y, r: 10, growth: 320, life: 0.45, maxLife: 0.45 });
+    waves.push({ x, y, r: 4, growth: 190, life: 0.32, maxLife: 0.32 });
+}
+
+function updateEffects(dt) {
+    if (shakeTime > 0) shakeTime = Math.max(0, shakeTime - dt);
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.life -= dt;
+        if (p.life <= 0) { particles.splice(i, 1); continue; }
+
+        const d = Math.exp(-p.drag * dt);
+        p.vx *= d;
+        p.vy *= d;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+    }
+
+    for (let i = waves.length - 1; i >= 0; i--) {
+        const wv = waves[i];
+        wv.life -= dt;
+        wv.r += wv.growth * dt;
+        if (wv.life <= 0) waves.splice(i, 1);
+    }
+}
+
+function updateSuperTrail(dt) {
+    // Desaparecimento gradual de cada ponto
+    for (let i = superTrail.length - 1; i >= 0; i--) {
+        const p = superTrail[i];
+        p.life -= dt / SUPER_TRAIL.fade;
+        if (p.life <= 0) superTrail.splice(i, 1);
+    }
+
+    if (superTrailTimer <= 0) return;
+    superTrailTimer = Math.max(0, superTrailTimer - dt);
+
+    // Clean Mode: sem trilha. No gol/parado também não gera novos pontos.
+    if (settings.clean || !matchState || matchState.goalActive || matchState.goalPending) return;
+
+    const last = superTrail[superTrail.length - 1];
+
+    if (!last) {
+        superTrail.push({ x: ball.x, y: ball.y, life: 1 });
+        return;
+    }
+
+    // Preenche o caminho para a trilha ficar contínua mesmo em alta velocidade
+    const dx = ball.x - last.x;
+    const dy = ball.y - last.y;
+    const d = Math.hypot(dx, dy);
+    const stepLen = 6;
+
+    if (d > stepLen) {
+        const steps = Math.min(8, Math.ceil(d / stepLen));
+        for (let s = 1; s <= steps; s++) {
+            const f = s / steps;
+            superTrail.push({ x: last.x + dx * f, y: last.y + dy * f, life: 1 });
+        }
+    } else if (d > 0.6) {
+        superTrail.push({ x: ball.x, y: ball.y, life: 1 });
+    }
+
+    // Limite de segurança
+    if (superTrail.length > 140) superTrail.splice(0, superTrail.length - 140);
+}
+
+// Atualiza as trilhas vermelhas e pretas do jogador durante o superchute
+// Atualiza os rabiscos/riscos soltos ao redor do jogador durante a carga
+function updatePlayerRabiscos(dt) {
+    for (let i = playerRabiscos.length - 1; i >= 0; i--) {
+        const p = playerRabiscos[i];
+        p.life -= dt / PLAYER_RABISCO.fade;
+        if (p.life <= 0) playerRabiscos.splice(i, 1);
+    }
+}
+
+// Gera riscos vermelhos/pretos ao redor de um jogador carregando o superchute
+function generateRabiscosFor(p) {
+    if (settings.clean || !p || !p.superCharging) return;
+
+    const speed = p.superChargeSpeed || 0;
+    const rabiscoCount = 2 + Math.floor(speed * 3);
+
+    for (let s = 0; s < rabiscoCount; s++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 4 + Math.random() * 14;
+        const len = 6 + Math.random() * 18;
+        const vx = Math.cos(angle) * (0.5 + Math.random() * 1.5);
+        const vy = Math.sin(angle) * (0.5 + Math.random() * 1.5);
+
+        playerRabiscos.push({
+            x: p.x + Math.cos(angle) * dist,
+            y: p.y + Math.sin(angle) * dist,
+            vx: vx,
+            vy: vy,
+            life: 1,
+            maxLife: PLAYER_RABISCO.duration,
+            angle: angle,
+            len: len,
+            color: Math.random() > 0.5 ? 'red' : 'black',
+        });
+    }
+
+    if (playerRabiscos.length > PLAYER_RABISCO.maxPoints) {
+        playerRabiscos.splice(0, playerRabiscos.length - PLAYER_RABISCO.maxPoints);
+    }
+}
+
+// Gera marcas de terra (chuteira na quadra) enquanto um jogador carrega o superchute.
+// As marcas pertencem à partida inteira: só são limpas quando sai um gol.
+
+// Adiciona uma única marca do rastro (linha contínua + splash ocasional)
+function addGroundMark(x, y, baseAngle) {
+    if (groundMarks.length >= GROUND_MARK.maxPoints) return;
+
+    const len = GROUND_MARK.stepLen + 4 + Math.random() * 5;
+    const width = 3.5 + Math.random() * 2;
+
+    let splash = null;
+    if (Math.random() < 0.35) {
+        splash = [];
+        const drops = 2 + ((Math.random() * 3) | 0);
+        for (let i = 0; i < drops; i++) {
+            const a = baseAngle + (Math.random() - 0.5) * Math.PI;
+            const d = 3 + Math.random() * 11;
+            splash.push({
+                dx: Math.cos(a) * d,
+                dy: Math.sin(a) * d,
+                r: 1 + Math.random() * 1.8,
+            });
+        }
+    }
+
+    groundMarks.push({
+        x: x,
+        y: y,
+        life: 1,
+        maxLife: GROUND_MARK.duration,
+        size: len,
+        angle: baseAngle + (Math.random() - 0.5) * 0.12,
+        width: width,
+        splash: splash,
+        color: 'brown',
+    });
+}
+
+// Solta as primeiras pegadas no instante em que o jogador inicia a super carga
+function spawnSuperStartMarks(p) {
+    if (!p || settings.clean) return;
+    const dirX = p.superChargeDirX || 1;
+    const dirY = p.superChargeDirY || 0;
+    const baseAngle = Math.atan2(dirY, dirX);
+    const dist = p.r + 2;
+    const px = -dirY;
+    const py = dirX;
+
+    addGroundMark(p.x + dirX * dist + px * 7, p.y + dirY * dist + py * 7, baseAngle);
+    addGroundMark(p.x + dirX * dist - px * 7, p.y + dirY * dist - py * 7, baseAngle);
+    addGroundMark(p.x + dirX * dist * 0.6, p.y + dirY * dist * 0.6, baseAngle);
+}
+
+// Acumula o deslocamento de um jogador em carga e solta marcas espaçadas
+function generateGroundMarksFor(p, dt) {
+    if (!p || settings.clean) return;
+    const v = getView(p.id);
+    const dirX = p.superChargeDirX || 1;
+    const dirY = p.superChargeDirY || 0;
+
+    v.groundAccum += Math.hypot(p.vx, p.vy) * dt * (1 / GROUND_MARK.stepLen);
+
+    while (v.groundAccum >= 1 && groundMarks.length < GROUND_MARK.maxPoints) {
+        v.groundAccum -= 1;
+
+        const offsetX = dirX * (p.r + 2) + (Math.random() - 0.5) * 6;
+        const offsetY = dirY * (p.r + 2) + (Math.random() - 0.5) * 6;
+        const angle = Math.atan2(dirY, dirX);
+
+        addGroundMark(p.x + offsetX, p.y + offsetY, angle);
+    }
+}
+
+// As marcas de terra não somem com o tempo - só são limpas ao fazer um gol
+function updateGroundMarks(dt) {
+    // Sem fade: as marcas ficam sólidas até um gol ser marcado
+}
+
+// ============================================================
+//  PARTIDA (simulação local / host)
+// ============================================================
+function resetVisualState() {
+    kickAuras.length = 0;
+    particles.length = 0;
+    waves.length = 0;
+    shakeTime = 0;
+    superTrail.length = 0;
+    superTrailTimer = 0;
+    playerRabiscos.length = 0;
+    groundMarks.length = 0;
+    if (goalBanner) goalBanner.classList.remove('show');
+}
+
+function startMatch(roster, opts) {
+    opts = opts || {};
+    const specs = (roster && roster.length ? roster : [{ id: 'local', name: 'Você', team: 0 }]).map(function (r) {
+        return {
+            id: String(r.id),
+            name: String(r.name || 'Jogador').slice(0, 12),
+            team: r.team === 1 ? 1 : 0,
+        };
+    });
+
+    match = SIM.createMatch({
+        players: specs,
+        started: true,
+        maxScore: opts.maxScore || 0,
+        timeLimit: opts.timeLimit || 0,
+    });
+    matchState = match.state;
+    players = matchState.players;
+    ball = matchState.ball;
+    localPlayerId = String(opts.localId || specs[0].id);
+    player = findPlayer(localPlayerId) || players[0];
+
+    playerViews.clear();
+    for (let i = 0; i < players.length; i++) getView(players[i].id);
+
+    resetVisualState();
+    remoteInputs.clear();
+    startedPlaying = true;
+    matchRunning = true;
+}
+
+function startSoloMatch() {
+    mode = 'solo';
+    const name = (lobbyPlayerName || '').trim() || 'Você';
+    startMatch([{ id: 'local', name: name, team: 0 }], { localId: 'local' });
+    leaveMatchBtn.classList.add('show');
+    closeLobby();
+}
+
+function updateKickAuras(dt) {
+    if (!ball) return;
+    for (let i = kickAuras.length - 1; i >= 0; i--) {
+        kickAuras[i].x = ball.x;
+        kickAuras[i].y = ball.y;
+        kickAuras[i].t -= dt * 4.5;
+        if (kickAuras[i].t <= 0) kickAuras.splice(i, 1);
+    }
+}
+
+// Atualiza os efeitos visuais derivados do estado dos jogadores (fade, flash, coroa)
+function updateViews(dt) {
+    if (!matchState) return;
+
+    for (let i = 0; i < players.length; i++) {
+        const p = players[i];
+        const v = getView(p.id);
+
+        if (p.powerArmed || p.superCharging) {
+            v.fade = Math.min(1, v.fade + dt * 12);
+        } else {
+            v.fade = Math.max(0, v.fade - dt * 12);
+        }
+
+        if (v.flash > 0) v.flash = Math.max(0, v.flash - dt * 8);
+        if (v.crownPop > 0) v.crownPop = Math.max(0, v.crownPop - dt * 2.2);
+
+        if (p.crownTimer > 0 && v.lastCrown <= 0) v.crownPop = 1;
+        v.lastCrown = p.crownTimer;
+
+        if (p.superCharging) {
+            generateRabiscosFor(p);
+            generateGroundMarksFor(p, dt);
+        } else {
+            v.groundAccum = 0;
+        }
+    }
+
+    updatePlayerRabiscos(dt);
+    updateSuperTrail(dt);
+}
+
+// Efeitos disparados pelos eventos da simulação (funciona igual para host e convidados)
+function handleSimEvents(events) {
+    if (!events || !events.length) return;
+
+    for (let i = 0; i < events.length; i++) {
+        const ev = events[i];
+
+        if (ev.type === 'kick') {
+            if (!settings.clean) {
+                kickAuras.push({ x: ev.x, y: ev.y, t: 1, super: false });
+            }
+        } else if (ev.type === 'superStart') {
+            const p = findPlayer(ev.id);
+            if (p) {
+                const v = getView(p.id);
+                v.groundAccum = 0;
+                spawnSuperStartMarks(p);
+            }
+            playerRabiscos.length = 0;
+        } else if (ev.type === 'superFire') {
+            const p = findPlayer(ev.id);
+            if (p) {
+                const v = getView(p.id);
+                v.flash = 1;
+                spawnSuperStartMarks(p);
+            }
+            if (!settings.clean) {
+                kickAuras.push({ x: ev.x, y: ev.y, t: 1, super: true });
+            }
+            superTrail.length = 0;
+            superTrailTimer = SUPER_TRAIL.duration;
+            playerRabiscos.length = 0;
+        } else if (ev.type === 'goal') {
+            addShake(9, 0.5);
+            spawnExplosion(ev.x, ev.y);
+            groundMarks.length = 0;
+
+            if (ev.crown && ev.scorerId) {
+                const p = findPlayer(ev.scorerId);
+                if (p) {
+                    getView(p.id).crownPop = 1;
+                    spawnCrownSparkles(p.x, p.y - p.r - 26);
+                }
+            }
+        } else if (ev.type === 'goalBanner') {
+            showGoalBanner();
+        } else if (ev.type === 'reset') {
+            superTrail.length = 0;
+            superTrailTimer = 0;
+            groundMarks.length = 0;
+            if (goalBanner) goalBanner.classList.remove('show');
+        } else if (ev.type === 'finished') {
+            if (typeof onMatchFinished === 'function') onMatchFinished(ev);
+        }
+    }
+}
+
+function buildLocalInput(now) {
+    let ax = joy.inputX;
+    let ay = joy.inputY;
+
+    let kx = 0;
+    let ky = 0;
+    if (kb.left) kx -= 1;
+    if (kb.right) kx += 1;
+    if (kb.up) ky -= 1;
+    if (kb.down) ky += 1;
+
+    if (kx !== 0 || ky !== 0) {
+        const len = Math.hypot(kx, ky);
+        ax = kx / len;
+        ay = ky / len;
+    }
+
+    let kick = pendingKick || kb.justKicked;
+    let power = pendingPower || kb.justPowered;
+
+    pendingKick = false;
+    pendingPower = false;
+    kb.justKicked = false;
+    kb.justPowered = false;
+
+    if (mode === 'guest') {
+        // Feedback imediato do chute: só visual. A bola é renderizada pelo
+        // host, então não se mexe nela aqui (evita "vai e volta").
+        if (kick) {
+            guestKickUntil = now + 140;
+            if (!settings.clean && ball) {
+                kickAuras.push({ x: ball.x, y: ball.y, t: 1, super: false });
+            }
+        }
+        if (power) guestPowerUntil = now + 140;
+        kick = now < guestKickUntil;
+        power = now < guestPowerUntil;
+        guestInputSeq++;
+    }
+
+    return { ax: ax, ay: ay, kick: kick, power: power, seq: mode === 'guest' ? guestInputSeq : 0 };
+}
+
+function stepLocalMatch(dt, localInputOverride, kickBonuses) {
+    if (!match || !matchRunning) return;
+
+    const now = performance.now();
+    const inputs = {};
+    inputs[localPlayerId] = localInputOverride || buildLocalInput(now);
+
+    if (mode === 'host') {
+        kickBonuses = kickBonuses || {};
+        for (let i = 0; i < players.length; i++) {
+            const p = players[i];
+            if (p.id === localPlayerId) continue;
+            // Fila ordenada por seq: um input por passo de simulação. O esquema
+            // anterior ("último input ganha") descartava seqs quando chegavam 2
+            // inputs no mesmo frame, e o replay do guest ficava 1 passo à frente.
+            const entry = remoteInputs.get(p.id);
+            let next = null;
+            if (entry && entry.queue.length) {
+                while (entry.queue.length && now - entry.queue[0].t > 700) entry.queue.shift();
+                if (entry.queue.length) next = entry.queue.shift();
+            }
+            if (next) {
+                inputs[p.id] = next.d;
+                if (typeof next.seq === 'number') {
+                    lastInputSeqByClient[p.id] = next.seq;
+                }
+            } else {
+                inputs[p.id] = { ax: 0, ay: 0, kick: false, power: false };
+            }
+        }
+    }
+
+    if (mode === 'guest') {
+        // Predição apenas do jogador local. Bola, chute, colisões com a bola,
+        // gol/placar/tempo vêm do host e são apenas interpolados aqui.
+        // Mantém a colisão unilateral jogador↔jogador para não atravessar.
+        match.step(dt, inputs, kickBonuses, {
+            localOnlyId: localPlayerId,
+            localCollisions: true,
+            ballRenderOnly: true,
+        });
+    } else {
+        match.step(dt, inputs, kickBonuses);
+    }
+
+    const evs = match.drainEvents();
+    if (evs.length && mode === 'host') {
+        handleSimEvents(evs);
+        if (typeof queueNetEvents === 'function') queueNetEvents(evs);
+    }
+    // Guest descarta eventos locais: eventos do host chegam por onHostFrame.
+
+    updateViews(dt);
+    updateEffects(dt);
+    updateKickAuras(dt);
+}
+
+function endCurrentMatch() {
+    matchRunning = false;
+    startedPlaying = false;
+    remoteInputs.clear();
+    guestKickUntil = 0;
+    guestPowerUntil = 0;
+    resetVisualState();
+}
+
+// ============================================================
+//  PREVISÃO DA TRAJETÓRIA (com reflexões nas paredes)
+// ============================================================
+function predictPath(startX, startY, dirX, dirY, bounces) {
+    const r = ball.r;
+    const minX = COURT.x + r;
+    const maxX = COURT.x + COURT.w - r;
+    const minY = COURT.y + r;
+    const maxY = COURT.y + COURT.h - r;
+    const mouthTop = GOAL.y + r;
+    const mouthBot = GOAL.y + GOAL.height - r;
+
+    let x = startX, y = startY;
+    let vx = dirX, vy = dirY;
+    const pts = [{ x, y }];
+
+    for (let i = 0; i < bounces; i++) {
+        let tBest = Infinity;
+        let normal = null;
+        let side = null;
+
+        if (vx > 1e-6) {
+            const t = (maxX - x) / vx;
+            if (t > 1e-4 && t < tBest) { tBest = t; normal = { x: -1, y: 0 }; side = 'right'; }
+        } else if (vx < -1e-6) {
+            const t = (minX - x) / vx;
+            if (t > 1e-4 && t < tBest) { tBest = t; normal = { x: 1, y: 0 }; side = 'left'; }
+        }
+
+        if (vy > 1e-6) {
+            const t = (maxY - y) / vy;
+            if (t > 1e-4 && t < tBest) { tBest = t; normal = { x: 0, y: -1 }; side = null; }
+        } else if (vy < -1e-6) {
+            const t = (minY - y) / vy;
+            if (t > 1e-4 && t < tBest) { tBest = t; normal = { x: 0, y: 1 }; side = null; }
+        }
+
+        if (!normal || !isFinite(tBest)) break;
+
+        x += vx * tBest;
+        y += vy * tBest;
+        pts.push({ x, y });
+
+        // A parede lateral está aberta (boca do gol): a trajetória termina entrando
+        if (side && y > mouthTop && y < mouthBot) return pts;
+
+        // Reflexão
+        const d = vx * normal.x + vy * normal.y;
+        vx -= 2 * d * normal.x;
+        vy -= 2 * d * normal.y;
+    }
+
+    return pts;
+}
+
+// ============================================================
+//  DESENHO
+// ============================================================
+const COLORS = {
+    outside: '#0a5c36',
+    stripeA: '#0d6b3f',
+    stripeB: '#0a5f37',
+    fieldFlat: '#0b6339',
+    line: 'rgba(255,255,255,0.85)',
+    lineSoft: 'rgba(255,255,255,0.45)',
+    goalLeft: 'rgba(233,69,96,0.16)',
+    goalRight: 'rgba(78,205,196,0.16)',
+    guide: 'rgba(255,255,255,0.92)',
+};
+
+// Bolsão do gol, rebaixado para fora da quadra
+function drawGoalPocket(px, py, pw, ph, openRight) {
+    // Fundo escuro (profundidade)
+    ctx.fillStyle = 'rgba(3, 30, 19, 0.94)';
+    ctx.fillRect(px, py, pw, ph);
+
+    // Rede (textura removida no Clean Mode)
+    if (!settings.clean) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(px, py, pw, ph);
+        ctx.clip();
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+        ctx.lineWidth = 1.2;
+        const step = 13;
+        for (let i = -ph; i < pw + ph; i += step) {
+            ctx.beginPath();
+            ctx.moveTo(px + i, py);
+            ctx.lineTo(px + i + ph, py + ph);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(px + i, py + ph);
+            ctx.lineTo(px + i + ph, py);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    // Contorno em U (a boca fica aberta para a quadra)
+    ctx.strokeStyle = COLORS.line;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    if (openRight) {
+        ctx.moveTo(px + pw, py);
+        ctx.lineTo(px, py);
+        ctx.lineTo(px, py + ph);
+        ctx.lineTo(px + pw, py + ph);
+    } else {
+        ctx.moveTo(px, py);
+        ctx.lineTo(px + pw, py);
+        ctx.lineTo(px + pw, py + ph);
+        ctx.lineTo(px, py + ph);
+    }
+    ctx.stroke();
+}
+
+function drawPosts() {
+    const gTop = GOAL.y;
+    const gBot = GOAL.y + GOAL.height;
+    const posts = [
+        [COURT.x, gTop],
+        [COURT.x, gBot],
+        [COURT.x + COURT.w, gTop],
+        [COURT.x + COURT.w, gBot],
+    ];
+
+    for (const [px, py] of posts) {
+        ctx.fillStyle = '#f7f7f7';
+        ctx.beginPath();
+        ctx.arc(px, py, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+    }
+}
+
+function drawCourt() {
+    const { x, y, w, h } = COURT;
+    const gTop = GOAL.y;
+    const gBot = GOAL.y + GOAL.height;
+    const areaW = 105;
+
+    // Faixas (ou cor plana no Clean Mode)
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.clip();
+
+    if (settings.clean) {
+        ctx.fillStyle = COLORS.fieldFlat;
+        ctx.fillRect(x, y, w, h);
+    } else {
+        const stripeW = 46;
+        for (let i = 0; i * stripeW < w; i++) {
+            ctx.fillStyle = (i % 2 === 0) ? COLORS.stripeA : COLORS.stripeB;
+            ctx.fillRect(x + i * stripeW, y, stripeW, h);
+        }
+    }
+    ctx.restore();
+
+    // Áreas de gol (dentro da quadra)
+    ctx.fillStyle = COLORS.goalLeft;
+    ctx.fillRect(x, gTop, areaW, GOAL.height);
+    ctx.fillStyle = COLORS.goalRight;
+    ctx.fillRect(x + w - areaW, gTop, areaW, GOAL.height);
+
+    // Bolsões rebaixados atrás das paredes
+    drawGoalPocket(x - GOAL.depth, gTop, GOAL.depth, GOAL.height, true);
+    drawGoalPocket(x + w, gTop, GOAL.depth, GOAL.height, false);
+
+    // Linhas da quadra (lados com abertura para o gol)
+    ctx.strokeStyle = COLORS.line;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + w, y);
+
+    ctx.moveTo(x, y + h);
+    ctx.lineTo(x + w, y + h);
+
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, gTop);
+    ctx.moveTo(x, gBot);
+    ctx.lineTo(x, y + h);
+
+    ctx.moveTo(x + w, y);
+    ctx.lineTo(x + w, gTop);
+    ctx.moveTo(x + w, gBot);
+    ctx.lineTo(x + w, y + h);
+    ctx.stroke();
+
+    // Linha do gol (na boca do bolsão)
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x, gTop);
+    ctx.lineTo(x, gBot);
+    ctx.moveTo(x + w, gTop);
+    ctx.lineTo(x + w, gBot);
+    ctx.stroke();
+
+    // Linha do meio
+    ctx.strokeStyle = COLORS.line;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(x + w / 2, y);
+    ctx.lineTo(x + w / 2, y + h);
+    ctx.stroke();
+
+    // Círculo e marca central
+    ctx.beginPath();
+    ctx.arc(x + w / 2, y + h / 2, 72, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = COLORS.line;
+    ctx.beginPath();
+    ctx.arc(x + w / 2, y + h / 2, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Caixas da área (tracejadas)
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = COLORS.lineSoft;
+    ctx.strokeRect(x, gTop, areaW, GOAL.height);
+    ctx.strokeRect(x + w - areaW, gTop, areaW, GOAL.height);
+
+    // Traves
+    drawPosts();
+}
+
+// Alfa da guia: 1 até metade do alcance, depois cai suavemente até 0
+function guideAlpha(d, reach) {
+    const start = reach * 0.5;
+    if (d <= start) return 1;
+    const t = (d - start) / (reach - start);
+    return Math.max(0, 1 - t * t);
+}
+
+// Desenha a linha tracejada com fade progressivo, parando no alcance real
+function drawFadingGuide(pts, reach) {
+    const dashOn = 13;
+    const dashOff = 9;
+    const cycle = dashOn + dashOff;
+
+    ctx.lineWidth = 3.5;
+    ctx.lineCap = 'round';
+    ctx.setLineDash([]);
+
+    let dist0 = 0;
+
+    for (let i = 0; i < pts.length - 1; i++) {
+        const a = pts[i];
+        const b = pts[i + 1];
+        const segLen = Math.hypot(b.x - a.x, b.y - a.y);
+        if (segLen < 1e-6) continue;
+        if (dist0 >= reach) break;
+
+        let s = 0;
+        while (s < segLen - 1e-6 && dist0 + s < reach) {
+            const phase = (dist0 + s) % cycle;
+
+            if (phase < dashOn) {
+                const onLen = Math.min(dashOn - phase, segLen - s, reach - (dist0 + s));
+                if (onLen > 0.05) {
+                    const t0 = s / segLen;
+                    const t1 = (s + onLen) / segLen;
+                    const alpha = guideAlpha(dist0 + s + onLen / 2, reach);
+                    if (alpha > 0.02) {
+                        ctx.strokeStyle = `rgba(255,255,255,${0.95 * alpha})`;
+                        ctx.beginPath();
+                        ctx.moveTo(a.x + (b.x - a.x) * t0, a.y + (b.y - a.y) * t0);
+                        ctx.lineTo(a.x + (b.x - a.x) * t1, a.y + (b.y - a.y) * t1);
+                        ctx.stroke();
+                    }
+                }
+                s += Math.max(onLen, 0.01);
+            } else {
+                const offLen = Math.min(cycle - phase, segLen - s, reach - (dist0 + s));
+                s += Math.max(offLen, 0.01);
+            }
+        }
+
+        dist0 += segLen;
+    }
+}
+
+function drawKickGuide() {
+    if (!player || !matchState || !ball) return;
+    if (matchState.goalActive || matchState.goalPending) return;
+    if (!playerInRange(player)) return;
+
+    let dx = ball.x - player.x;
+    let dy = ball.y - player.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 1) { dx = 1; dy = 0; }
+    const nx = dx / (dist || 1);
+    const ny = dy / (dist || 1);
+
+    const pts = predictPath(ball.x, ball.y, nx, ny, KICK.maxBounces);
+    if (pts.length < 2) return;
+
+    // Distância real que a bola percorre com esse chute.
+    // Com atrito exponencial, o total é v0 / damping (a bola nunca chega ao infinito).
+    const reach = (KICK.power / BALL.damping) * 0.95;
+
+    // Distância acumulada em cada ponto da trajetória
+    const cum = [0];
+    for (let i = 1; i < pts.length; i++) {
+        cum[i] = cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+    }
+    const total = cum[cum.length - 1];
+
+    ctx.save();
+
+    // Linha tracejada que some antes de chegar na parede, se a bola não alcançar
+    drawFadingGuide(pts, reach);
+
+    // Pontos de reflexão (somente os que a bola realmente alcança)
+    for (let i = 1; i < pts.length - 1; i++) {
+        if (cum[i] > reach) break;
+        const alpha = 0.95 * guideAlpha(cum[i], reach);
+        if (alpha < 0.05) continue;
+
+        ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+        ctx.beginPath();
+        ctx.arc(pts[i].x, pts[i].y, 5.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+    }
+
+    // Seta só aparece quando a bola alcança o fim da trajetória prevista
+    if (total <= reach) {
+        const last = pts[pts.length - 1];
+        const prev = pts[pts.length - 2];
+        let ax = last.x - prev.x;
+        let ay = last.y - prev.y;
+        const al = Math.hypot(ax, ay);
+
+        if (al > 0.001) {
+            ax /= al;
+            ay /= al;
+            const size = 16;
+            const angle = Math.atan2(ay, ax);
+            const alpha = Math.max(0.4, 0.95 * guideAlpha(total, reach));
+
+            ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+            ctx.beginPath();
+            ctx.moveTo(last.x, last.y);
+            ctx.lineTo(
+                last.x - Math.cos(angle - 0.45) * size,
+                last.y - Math.sin(angle - 0.45) * size
+            );
+            ctx.lineTo(
+                last.x - Math.cos(angle + 0.45) * size,
+                last.y - Math.sin(angle + 0.45) * size
+            );
+            ctx.closePath();
+            ctx.fill();
+        }
+    }
+
+    // Anel indicando que está ao alcance
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([7, 6]);
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.r + 7, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.restore();
+}
+
+function drawSuperTrail() {
+    if (settings.clean || superTrail.length < 2) return;
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Desenha de trás para frente: a ponta perto da bola fica mais forte
+    // e a cauda vai afinando, como um risco de vento.
+    for (let i = superTrail.length - 1; i > 0; i--) {
+        const p1 = superTrail[i];
+        const p0 = superTrail[i - 1];
+        const a = Math.max(0, Math.min(p0.life, p1.life));
+        if (a <= 0) continue;
+
+        ctx.strokeStyle = `rgba(255, 40, 40, ${0.35 * a})`;
+        ctx.lineWidth = 1.5 + 4 * a;
+        ctx.beginPath();
+        ctx.moveTo(p0.x, p0.y);
+        ctx.lineTo(p1.x, p1.y);
+        ctx.stroke();
+
+        // Vermelha mais forte no centro da trilha da bola
+        ctx.strokeStyle = `rgba(255, 40, 40, ${0.6 * a})`;
+        ctx.lineWidth = 0.5 + 2 * a;
+        ctx.beginPath();
+        ctx.moveTo(p0.x, p0.y);
+        ctx.lineTo(p1.x, p1.y);
+        ctx.stroke();
+    }
+
+    ctx.restore();
+}
+
+// Desenha trilhas vermelhas e pretas atrás do jogador durante o superchute (estilo Barou / rei)
+// Desenha os rabiscos/riscos soltos ao redor do jogador durante o superchute
+function drawPlayerRabiscos() {
+    if (settings.clean || playerRabiscos.length === 0) return;
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    for (const r of playerRabiscos) {
+        const a = Math.max(0, r.life / r.maxLife);
+        if (a <= 0) continue;
+
+        // Cor: vermelho ou preto (estilo rabiscos de desenho)
+        const isRed = r.color === 'red';
+        const baseR = isRed ? 255 : 20;
+        const baseG = isRed ? 40 : 20;
+        const baseB = isRed ? 40 : 20;
+
+        ctx.strokeStyle = `rgba(${baseR}, ${baseG}, ${baseB}, ${0.9 * a})`;
+        ctx.lineWidth = 2 + 3 * a;
+        ctx.beginPath();
+
+        // Desenha um risco solto (rabisco) - linha curta e torta
+        const x1 = r.x;
+        const y1 = r.y;
+        const x2 = r.x + Math.cos(r.angle) * r.len * a;
+        const y2 = r.y + Math.sin(r.angle) * r.len * a;
+
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        // Segundo traço cruzado para dar efeito de rabiscos
+        ctx.strokeStyle = `rgba(${baseR}, ${baseG}, ${baseB}, ${0.5 * a})`;
+        ctx.lineWidth = 1 + 2 * a;
+        ctx.beginPath();
+        const cx = (x1 + x2) / 2;
+        const cy = (y1 + y2) / 2;
+        const perpAngle = r.angle + Math.PI / 2;
+        ctx.moveTo(
+            cx + Math.cos(perpAngle) * r.len * 0.4 * a,
+            cy + Math.sin(perpAngle) * r.len * 0.4 * a
+        );
+        ctx.lineTo(
+            cx - Math.cos(perpAngle) * r.len * 0.4 * a,
+            cy - Math.sin(perpAngle) * r.len * 0.4 * a
+        );
+        ctx.stroke();
+    }
+
+    ctx.restore();
+}
+
+// Desenha as marcas de terra (chuteira na quadra) deixadas pelo jogador durante a carga
+function drawGroundMarks() {
+    if (settings.clean || groundMarks.length === 0) return;
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Marrom único e plano para todo o rastro
+    const DIRT = '#8b4513';
+    ctx.strokeStyle = DIRT;
+    ctx.fillStyle = DIRT;
+
+    for (const m of groundMarks) {
+        // Rastro = uma linha só, emendando na marca anterior
+        const half = m.size * 0.5;
+        const cos = Math.cos(m.angle);
+        const sin = Math.sin(m.angle);
+
+        ctx.strokeStyle = DIRT;
+        ctx.lineWidth = m.width;
+        ctx.beginPath();
+        ctx.moveTo(m.x - cos * half, m.y - sin * half);
+        ctx.lineTo(m.x + cos * half, m.y + sin * half);
+        ctx.stroke();
+
+        // Splash de lama ocasional (gotas chapadas em volta)
+        if (m.splash) {
+            ctx.fillStyle = DIRT;
+            for (const d of m.splash) {
+                ctx.beginPath();
+                ctx.arc(m.x + d.dx, m.y + d.dy, d.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    }
+
+    ctx.restore();
+}
+
+function drawKickAuras() {
+    if (settings.clean) return;
+
+    for (const k of kickAuras) {
+        const t = Math.max(0, k.t);
+        const ringR = ball.r + 6 + (1 - t) * (k.super ? 64 : 34);
+
+        if (k.super) {
+            // Auréola externa vermelha intensa (estilo rei Barou)
+            ctx.strokeStyle = `rgba(255, 40, 40, ${0.95 * t})`;
+            ctx.lineWidth = 10;
+            ctx.beginPath();
+            ctx.arc(k.x, k.y, ringR, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Auréola vermelha intermediária
+            ctx.strokeStyle = `rgba(255, 40, 40, ${0.7 * t})`;
+            ctx.lineWidth = 7;
+            ctx.beginPath();
+            ctx.arc(k.x, k.y, ringR * 0.88, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Risco preto grosso ao redor da auréola (rachadura de realeza)
+            ctx.strokeStyle = `rgba(0, 0, 0, ${0.8 * t})`;
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.arc(k.x, k.y, ringR + 5, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Segundo risco preto interno
+            ctx.strokeStyle = `rgba(0, 0, 0, ${0.6 * t})`;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(k.x, k.y, ringR * 0.78 - 2, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Faixas vermelhas radiais fortes saindo do centro (raios de rei)
+            const spikeCount = 12;
+            for (let s = 0; s < spikeCount; s++) {
+                const angle = (s / spikeCount) * Math.PI * 2;
+                const len = ringR * 0.6 * t;
+                ctx.strokeStyle = `rgba(255, 40, 40, ${0.9 * t})`;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(k.x, k.y);
+                ctx.lineTo(
+                    k.x + Math.cos(angle) * len,
+                    k.y + Math.sin(angle) * len
+                );
+                ctx.stroke();
+
+                // Preto na ponta de cada faixa vermelha
+                ctx.strokeStyle = `rgba(0, 0, 0, ${0.75 * t})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(
+                    k.x + Math.cos(angle) * len * 0.7,
+                    k.y + Math.sin(angle) * len * 0.7
+                );
+                ctx.lineTo(
+                    k.x + Math.cos(angle) * len,
+                    k.y + Math.sin(angle) * len
+                );
+                ctx.stroke();
+
+                // Risco preto menor na base
+                ctx.strokeStyle = `rgba(0, 0, 0, ${0.5 * t})`;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(k.x, k.y);
+                ctx.lineTo(
+                    k.x + Math.cos(angle) * len * 0.35,
+                    k.y + Math.sin(angle) * len * 0.35
+                );
+                ctx.stroke();
+            }
+
+            // Pontos de coroa vermelhos ao redor da auréola
+            const crownCount = 12;
+            for (let s = 0; s < crownCount; s++) {
+                const angle = (s / crownCount) * Math.PI * 2;
+                const dx = Math.cos(angle) * ringR * 0.95 * t;
+                const dy = Math.sin(angle) * ringR * 0.95 * t;
+                // Vermelho
+                ctx.fillStyle = `rgba(255, 40, 40, ${0.95 * t})`;
+                ctx.beginPath();
+                ctx.arc(k.x + dx, k.y + dy, 3.5 + 2 * t, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Pequena coroa (triângulo) no ponto
+                const cx = k.x + dx;
+                const cy = k.y + dy - 5 * t;
+                const sz = 3 + t;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy - sz);
+                ctx.lineTo(cx - sz * 0.7, cy + sz * 0.5);
+                ctx.lineTo(cx + sz * 0.7, cy + sz * 0.5);
+                ctx.closePath();
+                ctx.fill();
+
+                // Preto na base do ponto de coroa
+                ctx.fillStyle = `rgba(0, 0, 0, ${0.65 * t})`;
+                ctx.beginPath();
+                ctx.arc(cx, cy + sz * 0.2, 1.5 + t, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        } else {
+            // Auréola do chute normal: branca, sem super poder
+            ctx.strokeStyle = `rgba(255, 255, 255, ${0.7 * t})`;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(k.x, k.y, ringR, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Risco branco interno mais fraco
+            ctx.strokeStyle = `rgba(255, 255, 255, ${0.4 * t})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(k.x, k.y, ringR * 0.72, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+    }
+}
+
+function drawBall() {
+    const { x, y, r } = ball;
+
+    // Sombra (removida no Clean Mode)
+    if (!settings.clean) {
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.beginPath();
+        ctx.ellipse(x, y + r * 0.8, r * 0.9, r * 0.34, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(ball.angle);
+
+    // Corpo da bola (sempre branco, não escurece com o poder)
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Contorno
+    ctx.strokeStyle = '#20202a';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Gomos (pentágono central + costuras) — textura removida no Clean Mode
+    if (!settings.clean) {
+        const pentR = r * 0.4;
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+            const a = -Math.PI / 2 + i * (Math.PI * 2 / 5);
+            const px = Math.cos(a) * pentR;
+            const py = Math.sin(a) * pentR;
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fillStyle = '#20202a';
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(32,32,42,0.55)';
+        ctx.lineWidth = 1.6;
+        for (let i = 0; i < 5; i++) {
+            const a = -Math.PI / 2 + i * (Math.PI * 2 / 5);
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(a) * pentR, Math.sin(a) * pentR);
+            ctx.lineTo(Math.cos(a) * r * 0.96, Math.sin(a) * r * 0.96);
+            ctx.stroke();
+        }
+    }
+
+    ctx.restore();
+}
+
+// Faíscas douradas quando a coroa aparece
+function spawnCrownSparkles(x, y) {
+    if (settings.clean) return;
+    const colors = ['#ffd54a', '#fff3b0', '#ff4d6d', '#ffffff'];
+    for (let i = 0; i < 18; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const sp = 40 + Math.random() * 170;
+        const life = 0.5 + Math.random() * 0.5;
+        particles.push({
+            x, y,
+            vx: Math.cos(a) * sp,
+            vy: Math.sin(a) * sp - 40,
+            life,
+            maxLife: life,
+            size: 1.5 + Math.random() * 3,
+            drag: 2.2 + Math.random() * 2,
+            color: colors[(Math.random() * colors.length) | 0],
+        });
+    }
+}
+
+// Coroa de rei (estilo chapéu) — baseY é a parte de baixo da coroa (apoiada na cabeça)
+function drawCrown(cx, baseY, scale, alpha) {
+    const w = 42 * scale;
+    const h = 27 * scale;
+    const halfW = w / 2;
+    const t = Date.now() / 1000;
+    const bob = Math.sin(t * 3.2) * 1.8 * scale;
+
+    ctx.save();
+    ctx.translate(cx, baseY + bob);
+    ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+
+    // Brilho dourado ao redor
+    ctx.shadowColor = 'rgba(255, 205, 70, 0.9)';
+    ctx.shadowBlur = 14 * scale;
+
+    // Corpo da coroa (3 pontas)
+    const grad = ctx.createLinearGradient(0, -h, 0, 0);
+    grad.addColorStop(0, '#fff6bd');
+    grad.addColorStop(0.45, '#ffd54a');
+    grad.addColorStop(1, '#d18a00');
+
+    ctx.beginPath();
+    ctx.moveTo(-halfW, 0);
+    ctx.lineTo(-halfW, -h * 0.62);
+    ctx.lineTo(-halfW * 0.52, -h * 0.30);
+    ctx.lineTo(0, -h * 0.88);
+    ctx.lineTo(halfW * 0.52, -h * 0.30);
+    ctx.lineTo(halfW, -h * 0.62);
+    ctx.lineTo(halfW, 0);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = Math.max(1.4, 2.2 * scale);
+    ctx.strokeStyle = '#4a2c00';
+    ctx.stroke();
+
+    // Faixa inferior
+    ctx.beginPath();
+    ctx.rect(-halfW, -h * 0.20, w, h * 0.20);
+    ctx.fillStyle = 'rgba(160, 96, 0, 0.6)';
+    ctx.fill();
+    ctx.strokeStyle = '#4a2c00';
+    ctx.lineWidth = Math.max(1.2, 1.8 * scale);
+    ctx.stroke();
+
+    // Joias vermelhas (combinam com o superchute)
+    const jewel = (jx, jy, jr, color) => {
+        ctx.beginPath();
+        ctx.arc(jx, jy, jr, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = '#4a2c00';
+        ctx.lineWidth = Math.max(0.9, 1.2 * scale);
+        ctx.stroke();
+    };
+    jewel(-halfW * 0.52, -h * 0.10, 3 * scale, '#ff3b3b');
+    jewel(0, -h * 0.10, 3.4 * scale, '#ff2d55');
+    jewel(halfW * 0.52, -h * 0.10, 3 * scale, '#ff3b3b');
+
+    // Bolinhas nas pontas
+    ctx.fillStyle = '#ffe066';
+    ctx.beginPath(); ctx.arc(-halfW, -h * 0.62, 2.6 * scale, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(halfW, -h * 0.62, 2.6 * scale, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, -h * 0.88, 3 * scale, 0, Math.PI * 2); ctx.fill();
+
+    // Brilho cintilante na ponta direita
+    ctx.globalAlpha = Math.max(0, Math.min(1, alpha)) * (0.45 + 0.55 * Math.abs(Math.sin(t * 4)));
+    ctx.fillStyle = '#ffffff';
+    const sp = 3.2 * scale;
+    const sx = halfW * 0.82;
+    const sy = -h * 0.62;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy - sp);
+    ctx.lineTo(sx + sp * 0.28, sy - sp * 0.28);
+    ctx.lineTo(sx + sp, sy);
+    ctx.lineTo(sx + sp * 0.28, sy + sp * 0.28);
+    ctx.lineTo(sx, sy + sp);
+    ctx.lineTo(sx - sp * 0.28, sy + sp * 0.28);
+    ctx.lineTo(sx - sp, sy);
+    ctx.lineTo(sx - sp * 0.28, sy - sp * 0.28);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+}
+
+function hexToRgb(hex) {
+    const clean = String(hex || '#e94560').replace('#', '');
+    const full = clean.length === 3
+        ? clean[0] + clean[0] + clean[1] + clean[1] + clean[2] + clean[2]
+        : clean;
+    const n = parseInt(full, 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+function drawPlayer(p) {
+    if (!p) return;
+    const x = p.x;
+    const y = p.y;
+    const r = p.r;
+    const v = getView(p.id);
+
+    if (!settings.clean) {
+        ctx.fillStyle = 'rgba(0,0,0,0.22)';
+        ctx.beginPath();
+        ctx.ellipse(x, y + r * 0.65, r * 0.85, r * 0.32, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Anel suave no jogador local (ajuda a se achar no 2v2)
+    if (p === player) {
+        ctx.strokeStyle = 'rgba(255,224,102,0.8)';
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.arc(x, y, r + 7, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+
+    // Jogador mais escuro quando o poder está ativado (fade)
+    const powerColor = [120, 30, 60];
+    const baseColor = hexToRgb(p.color);
+    const rC = Math.round(baseColor[0] + (powerColor[0] - baseColor[0]) * v.fade);
+    const gC = Math.round(baseColor[1] + (powerColor[1] - baseColor[1]) * v.fade);
+    const bC = Math.round(baseColor[2] + (powerColor[2] - baseColor[2]) * v.fade);
+    ctx.fillStyle = 'rgba(' + rC + ',' + gC + ',' + bC + ',1)';
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    if (!settings.clean) {
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        ctx.beginPath();
+        ctx.arc(x - r * 0.3, y - r * 0.35, r * 0.45, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    const crownOn = p.crownTimer > 0;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 17px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(p.name || 'Jogador', x, y - r - (crownOn ? 44 : 8));
+
+    // Flash branco no corpo do jogador após disparar o superchute
+    if (v.flash > 0) {
+        const a = v.flash;
+        const rC2 = Math.round(baseColor[0] + (255 - baseColor[0]) * a);
+        const gC2 = Math.round(baseColor[1] + (255 - baseColor[1]) * a);
+        const bC2 = Math.round(baseColor[2] + (255 - baseColor[2]) * a);
+        ctx.fillStyle = 'rgba(' + rC2 + ',' + gC2 + ',' + bC2 + ',1)';
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+    }
+
+    // Coroa de rei: aparece quando o jogador marca gol com o superchute
+    if (crownOn) {
+        const cp = 1 - v.crownPop;
+        const c1 = 1.70158;
+        const c3 = c1 + 1;
+        const back = v.crownPop > 0
+            ? 1 + c3 * Math.pow(cp - 1, 3) + c1 * Math.pow(cp - 1, 2)
+            : 1;
+        const crownScale = Math.max(0.2, 0.25 + 0.75 * back);
+        const crownAlpha = p.crownTimer < 1 ? p.crownTimer : 1;
+        drawCrown(x, y - r - 2, crownScale, crownAlpha);
+    }
+}
+
+function drawEffects() {
+    if (!particles.length && !waves.length) return;
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+
+    for (const p of particles) {
+        const a = Math.max(0, p.life / p.maxLife);
+        ctx.globalAlpha = a;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * (0.35 + 0.65 * a), 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    ctx.globalAlpha = 1;
+
+    for (const wv of waves) {
+        const a = Math.max(0, wv.life / wv.maxLife);
+        ctx.strokeStyle = `rgba(255,230,140,${a})`;
+        ctx.lineWidth = 1 + 7 * a;
+        ctx.beginPath();
+        ctx.arc(wv.x, wv.y, wv.r, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    ctx.restore();
+}
+
+function render() {
+    const { dpr, scaleX, scaleY, offX, offY, w, h } = view;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = COLORS.outside;
+    ctx.fillRect(0, 0, w, h);
+
+    // ===== PLACAR E TEMPO (centralizados no topo, fixos na tela) =====
+    const scoreA = matchState ? matchState.score[0] : 0;
+    const scoreB = matchState ? matchState.score[1] : 0;
+    const elapsed = matchState ? matchState.time : 0;
+
+    ctx.font = 'bold 40px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const cx = w / 2;
+    const cy = 50;
+
+    // Placar do time vermelho (esquerda)
+    ctx.fillStyle = '#ff8fa2';
+    ctx.fillText(scoreA, cx - 140, cy);
+
+    // Separador
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.fillText('—', cx, cy);
+
+    // Tempo de partida (centro)
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = Math.floor(elapsed % 60);
+    const timeStr = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.fillText(timeStr, cx, cy);
+
+    // Separador direito
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.fillText('—', cx, cy);
+
+    // Placar do time azul (direita)
+    ctx.fillStyle = '#8fc6ff';
+    ctx.fillText(scoreB, cx + 140, cy);
+
+    // Nomes dos times (pequenos, sob o placar)
+    ctx.font = 'bold 11px "Segoe UI", sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.fillText('VERMELHO', cx - 140, cy + 30);
+    ctx.fillText('AZUL', cx + 140, cy + 30);
+
+    // Medidor de rede (guest): RTT, jitter e atraso de render aplicado.
+    if (mode === 'guest') {
+        ctx.textAlign = 'left';
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        ctx.font = 'bold 11px "Segoe UI", sans-serif';
+        ctx.fillText(
+            Math.round(netRtt) + 'ms  ±' + Math.round(netJitter) + 'ms  buffer ' + Math.round(netRenderDelay) + 'ms',
+            12, 20
+        );
+        ctx.textAlign = 'center';
+    }
+
+    // Tremida da tela (pequena, decaindo)
+    let sx = 0;
+    let sy = 0;
+    if (shakeTime > 0) {
+        const k = shakeTime / (shakeDuration || 1);
+        sx = (Math.random() * 2 - 1) * shakeMagnitude * k;
+        sy = (Math.random() * 2 - 1) * shakeMagnitude * k;
+    }
+
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.translate(offX, offY);
+    ctx.scale(scaleX, scaleY);
+
+    drawCourt();
+    drawGroundMarks();
+    drawSuperTrail();
+    drawKickGuide();
+    drawKickAuras();
+    drawBall();
+
+    // Ordena por Y para a sobreposição ficar natural
+    const drawOrder = players.slice().sort(function (a, b) { return a.y - b.y; });
+    for (let i = 0; i < drawOrder.length; i++) drawPlayer(drawOrder[i]);
+
+    drawPlayerRabiscos();
+    drawEffects();
+
+    ctx.restore();
+}
+
+// ============================================================
+//  JOYSTICK DINÂMICO (Pointer Events)
+// ============================================================
+const trigger = document.getElementById('joystick-trigger');
+const area = document.getElementById('joystick-area');
+const stick = document.getElementById('joystick-stick');
+const hint = document.getElementById('hint');
+const kickBtn = document.getElementById('kick-btn');
+const powerBtn = document.getElementById('power-btn');
+const fullscreenBtn = document.getElementById('fullscreen-btn');
+const powerFill = document.getElementById('power-fill');
+const powerText = document.getElementById('power-text');
+const goalBanner = document.getElementById('goal-banner');
+
+function showGoalBanner() {
+    goalBanner.classList.remove('show');
+    void goalBanner.offsetWidth; // reinicia a animação
+    goalBanner.classList.add('show');
+}
+
+const JOY = { radius: 120, stickMax: 48, deadzone: 6 };
+
+const joy = {
+    active: false,
+    pointerId: null,
+    cx: 0,
+    cy: 0,
+    inputX: 0,
+    inputY: 0,
+};
+
+const kb = {
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+    kick: false,
+    power: false,
+    justKicked: false,
+    justPowered: false,
+};
+
+let keyboardActive = false;
+let lastTouchTime = 0;
+
+function updateKeyboardActive() {
+    const now = Date.now();
+    const touchAgo = now - lastTouchTime;
+    // Se passou mais de 2 segundos sem toque, considere teclado ativo
+    if (touchAgo > 2000) keyboardActive = true;
+}
+
+function updateHUDVisibility() {
+    const hideMobile = keyboardActive || settings.keyboardMouse;
+    kickBtn.style.display = hideMobile ? 'none' : '';
+    powerBtn.style.display = hideMobile ? 'none' : '';
+    area.style.display = hideMobile ? 'none' : '';
+    stick.style.display = hideMobile ? 'none' : '';
+    // Tela cheia e config permanecem visíveis
+}
+
+function joyMove(clientX, clientY) {
+    const dx = clientX - joy.cx;
+    const dy = clientY - joy.cy;
+    const dist = Math.hypot(dx, dy);
+
+    if (dist < JOY.deadzone) {
+        joy.inputX = 0;
+        joy.inputY = 0;
+        stick.style.transform = 'translate(0px, 0px)';
+        return;
+    }
+
+    const clampedDist = Math.min(dist, JOY.stickMax);
+    const nx = dx / dist;
+    const ny = dy / dist;
+
+    stick.style.transform = `translate(${nx * clampedDist}px, ${ny * clampedDist}px)`;
+
+    const mag = Math.min(1, dist / JOY.stickMax);
+    joy.inputX = nx * mag;
+    joy.inputY = ny * mag;
+}
+
+function joyStart(e) {
+    if (joy.active) return;
+    e.preventDefault();
+
+    joy.active = true;
+    joy.pointerId = e.pointerId;
+
+    const half = window.innerWidth / 2;
+    const margin = JOY.radius / 2;
+
+    joy.cx = Math.min(Math.max(e.clientX, margin), half - margin);
+    joy.cy = Math.min(Math.max(e.clientY, margin), window.innerHeight - margin);
+
+    area.style.left = joy.cx + 'px';
+    area.style.top = joy.cy + 'px';
+    area.classList.add('active');
+
+    try { trigger.setPointerCapture(e.pointerId); } catch (err) {}
+
+    joyMove(e.clientX, e.clientY);
+    hint.classList.add('hidden');
+}
+
+function joyEnd(e) {
+    if (!joy.active || e.pointerId !== joy.pointerId) return;
+    joy.active = false;
+    joy.pointerId = null;
+    joy.inputX = 0;
+    joy.inputY = 0;
+    stick.style.transform = 'translate(0px, 0px)';
+    area.classList.remove('active');
+}
+
+trigger.addEventListener('pointerdown', joyStart);
+trigger.addEventListener('pointermove', e => {
+    if (joy.active && e.pointerId === joy.pointerId) joyMove(e.clientX, e.clientY);
+});
+trigger.addEventListener('pointerup', joyEnd);
+trigger.addEventListener('pointercancel', joyEnd);
+trigger.addEventListener('lostpointercapture', joyEnd);
+trigger.addEventListener('contextmenu', e => e.preventDefault());
+
+// ============================================================
+//  BOTÃO DE CHUTE
+// ============================================================
+kickBtn.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    pendingKick = true;
+    kickBtn.classList.add('pressed');
+    clearTimeout(kickBtn._t);
+    kickBtn._t = setTimeout(() => kickBtn.classList.remove('pressed'), 120);
+});
+kickBtn.addEventListener('contextmenu', e => e.preventDefault());
+
+// ============================================================
+//  BOTÃO DE PODER (SUPER CHUTE)
+// ============================================================
+function updatePowerUI() {
+    const p = player;
+    const cooldown = p ? (p.powerCooldown || 0) : 0;
+    const armed = p ? !!p.powerArmed : false;
+    const ready = cooldown <= 0;
+    const progress = ready ? 1 : 1 - cooldown / POWER.cooldown;
+
+    // O "copo" enche conforme a recarga avança (100% = pronto)
+    powerFill.style.height = (Math.max(0, Math.min(1, progress)) * 100).toFixed(1) + '%';
+
+    powerBtn.classList.toggle('cooling', !ready);
+    powerBtn.classList.toggle('ready', ready && !armed);
+    powerBtn.classList.toggle('armed', ready && armed);
+    powerBtn.setAttribute('aria-disabled', ready ? 'false' : 'true');
+
+    powerText.textContent = !ready
+        ? cooldown.toFixed(1) + 's'
+        : (armed ? 'ATIVO' : 'SUPER');
+}
+
+function togglePower() {
+    pendingPower = true;
+}
+
+powerBtn.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    pendingPower = true;
+});
+powerBtn.addEventListener('contextmenu', e => e.preventDefault());
+
+// Teclado (útil no PC): Espaço chuta
+window.addEventListener('keydown', e => {
+    if (e.code === 'Escape' && menuOpen) {
+        closeSettings();
+        return;
+    }
+});
+
+// ============================================================
+//  TELA CHEIA
+// ============================================================
+const fsBtn = document.getElementById('fullscreen-btn');
+const fsLabel = fsBtn.querySelector('.label');
+const fsIcon = fsBtn.querySelector('.icon');
+
+function isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+}
+
+function enterFullscreen() {
+    const el = document.documentElement;
+    if (el.requestFullscreen) return el.requestFullscreen();
+    if (el.webkitRequestFullscreen) return el.webkitRequestFullscreen();
+    if (el.msRequestFullscreen) return el.msRequestFullscreen();
+    return Promise.reject(new Error('Fullscreen API indisponível'));
+}
+
+function exitFullscreen() {
+    if (document.exitFullscreen) return document.exitFullscreen();
+    if (document.webkitExitFullscreen) return document.webkitExitFullscreen();
+    if (document.msExitFullscreen) return document.msExitFullscreen();
+}
+
+async function toggleFullscreen() {
+    try {
+        if (isFullscreen()) await exitFullscreen();
+        else await enterFullscreen();
+    } catch (err) {
+        console.warn('Tela cheia não suportada neste navegador:', err);
+    }
+}
+
+function updateFullscreenUI() {
+    const fs = isFullscreen();
+    fsLabel.textContent = fs ? 'SAIR' : 'TELA CHEIA';
+    fsIcon.textContent = fs ? '⤡' : '⛶';
+    setTimeout(resize, 100);
+}
+
+fsBtn.addEventListener('click', toggleFullscreen);
+document.addEventListener('fullscreenchange', updateFullscreenUI);
+document.addEventListener('webkitfullscreenchange', updateFullscreenUI);
+document.addEventListener('msfullscreenchange', updateFullscreenUI);
+
+// ============================================================
+//  MENU DE CONFIGURAÇÕES
+// ============================================================
+const settingsBtn = document.getElementById('settings-btn');
+const settingsOverlay = document.getElementById('settings-overlay');
+const settingsClose = document.getElementById('settings-close');
+const settingsHudBtn = document.getElementById('settings-hud-btn');
+const optStretched = document.getElementById('opt-stretched');
+const optClean = document.getElementById('opt-clean');
+const optKeyboardMouse = document.getElementById('opt-keyboard-mouse');
+const optKeyboardMouseRow = document.getElementById('opt-keyboard-mouse-row');
+
+// Detecção de celular
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
+
+// Mostrar/esconder a opção "Teclado e mouse no celular" apenas no celular
+if (optKeyboardMouseRow) {
+    if (isMobile) {
+        optKeyboardMouseRow.classList.remove('hidden');
+    } else {
+        optKeyboardMouseRow.classList.add('hidden');
+    }
+}
+
+const stretchExtra = document.getElementById('stretch-extra');
+const stretchLevel = document.getElementById('opt-stretch-level');
+const stretchLevelValue = document.getElementById('stretch-level-value');
+const netExtrap = document.getElementById('opt-net-extrap');
+const netExtrapValue = document.getElementById('net-extrap-value');
+
+const hudCustomizer = document.getElementById('hud-customizer');
+const hudCanvas = document.getElementById('hud-canvas');
+const hudReset = document.getElementById('hud-reset');
+const hudSave = document.getElementById('hud-save');
+const hudPropsPanel = document.getElementById('hud-props-panel');
+const hudPropsTitle = document.getElementById('hud-props-title');
+const hudPropsName = document.getElementById('hud-props-name');
+const hudPropOpacity = document.getElementById('hud-prop-opacity');
+const hudPropSize = document.getElementById('hud-prop-size');
+const hudPropsClose = document.getElementById('hud-props-close');
+
+const settingsKeysBtn = document.getElementById('settings-keys-btn');
+const keysCustomizer = document.getElementById('keys-customizer');
+const keysCanvas = document.getElementById('keys-canvas');
+const keysReset = document.getElementById('keys-reset');
+const keysSave = document.getElementById('keys-save');
+const keysPropsPanel = document.getElementById('keys-props-panel');
+const keysPropsTitle = document.getElementById('keys-props-title');
+const keysPropsName = document.getElementById('keys-props-name');
+const keysPropKey = document.getElementById('keys-prop-key');
+const keysPropsClose = document.getElementById('keys-props-close');
+
+let editingKeyId = null;
+
+let menuOpen = false;
+let hudCustomizing = false;
+let editingHudId = null;
+
+function syncStretchUI() {
+    stretchExtra.classList.toggle('hidden', !settings.stretched);
+    stretchLevel.value = settings.stretchLevel;
+    stretchLevelValue.textContent = settings.stretchLevel + '%';
+    if (netExtrap) netExtrap.value = settings.netExtrap;
+    if (netExtrapValue) netExtrapValue.textContent = formatNetExtrap(settings.netExtrap);
+}
+
+function resetJoystick() {
+    if (joy.active && joy.pointerId !== null) {
+        try { trigger.releasePointerCapture(joy.pointerId); } catch (err) {}
+    }
+    joy.active = false;
+    joy.pointerId = null;
+    joy.inputX = 0;
+    joy.inputY = 0;
+    stick.style.transform = 'translate(0px, 0px)';
+    area.classList.remove('active');
+}
+
+function openSettings() {
+    menuOpen = true;
+    resetJoystick();
+
+    // Sempre mostra as opções principais ao abrir o menu
+    const mainOpts = document.getElementById('settings-main-options');
+    const ks = document.getElementById('keys-section');
+    const closeBtn = document.getElementById('settings-close');
+    mainOpts.classList.remove('hidden');
+    ks.classList.add('hidden');
+    closeBtn.textContent = 'FECHAR';
+
+    optStretched.checked = settings.stretched;
+    optClean.checked = settings.clean;
+    if (optKeyboardMouse) {
+        optKeyboardMouse.checked = settings.keyboardMouse;
+    }
+
+    syncStretchUI();
+
+    // Sync key value labels
+    const keyLabels = { up: 'key-val-up', down: 'key-val-down', left: 'key-val-left', right: 'key-val-right', kick: 'key-val-kick', power: 'key-val-power' };
+    for (const [actionId, elId] of Object.entries(keyLabels)) {
+        const el = document.getElementById(elId);
+        if (el) {
+            const code = settings.keyboard.keys[actionId];
+            el.textContent = code === 'Space' ? 'Espaço' : code.replace('Key', '');
+        }
+    }
+
+    settingsOverlay.classList.remove('hidden');
+    settingsOverlay.setAttribute('aria-hidden', 'false');
+
+    try { settingsClose.focus({ preventScroll: true }); } catch (err) {}
+}
+
+function closeSettings() {
+    menuOpen = false;
+    settingsOverlay.classList.add('hidden');
+    settingsOverlay.setAttribute('aria-hidden', 'true');
+}
+
+settingsBtn.addEventListener('click', openSettings);
+settingsClose.addEventListener('click', () => {
+    const mainOpts = document.getElementById('settings-main-options');
+    const ks = document.getElementById('keys-section');
+    
+    if (!ks.classList.contains('hidden')) {
+        // Está na tela de personalizar teclas, voltar para opções principais
+        ks.classList.add('hidden');
+        mainOpts.classList.remove('hidden');
+        settingsClose.textContent = 'FECHAR';
+    } else {
+        closeSettings();
+    }
+});
+
+settingsOverlay.addEventListener('pointerdown', e => {
+    if (e.target === settingsOverlay) closeSettings();
+});
+
+optStretched.addEventListener('change', () => {
+    settings.stretched = optStretched.checked;
+    saveSettings();
+    syncStretchUI();
+    resize();
+});
+
+stretchLevel.addEventListener('input', () => {
+    settings.stretchLevel = Number(stretchLevel.value) || 0;
+    stretchLevelValue.textContent = settings.stretchLevel + '%';
+    updateView();
+});
+stretchLevel.addEventListener('change', saveSettings);
+
+if (netExtrap) {
+    netExtrap.addEventListener('input', () => setNetExtrap(netExtrap.value));
+}
+
+optClean.addEventListener('change', () => {
+    settings.clean = optClean.checked;
+
+    if (settings.clean) {
+        // Remove efeitos visuais pendentes ao ativar o Clean Mode
+        particles.length = 0;
+        waves.length = 0;
+        superTrail.length = 0;
+        superTrailTimer = 0;
+        kickAuras.length = 0;
+        shakeTime = 0;
+    }
+
+    saveSettings();
+});
+
+optKeyboardMouse.addEventListener('change', () => {
+    settings.keyboardMouse = optKeyboardMouse.checked;
+    saveSettings();
+    updateHUDVisibility();
+});
+
+function applyHUDPositions() {
+    const k = settings.hud.kick;
+    const p = settings.hud.power;
+    const f = settings.hud.fullscreen;
+    const s = settings.hud.settings;
+
+    if (settings.customHud) {
+        kickBtn.style.left = k.x + 'px';
+        kickBtn.style.top = k.y + 'px';
+        kickBtn.style.right = '';
+        kickBtn.style.bottom = '';
+        kickBtn.style.opacity = k.opacity / 100;
+        kickBtn.style.transform = 'scale(' + (k.size / 100) + ')';
+
+        powerBtn.style.left = p.x + 'px';
+        powerBtn.style.top = p.y + 'px';
+        powerBtn.style.right = '';
+        powerBtn.style.bottom = '';
+        powerBtn.style.opacity = p.opacity / 100;
+        powerBtn.style.transform = 'scale(' + (p.size / 100) + ')';
+
+        fullscreenBtn.style.left = f.x + 'px';
+        fullscreenBtn.style.top = f.y + 'px';
+        fullscreenBtn.style.right = '';
+        fullscreenBtn.style.bottom = '';
+        fullscreenBtn.style.opacity = f.opacity / 100;
+        fullscreenBtn.style.transform = 'scale(' + (f.size / 100) + ')';
+
+        settingsBtn.style.left = s.x + 'px';
+        settingsBtn.style.top = s.y + 'px';
+        settingsBtn.style.right = '';
+        settingsBtn.style.bottom = '';
+        settingsBtn.style.opacity = s.opacity / 100;
+        settingsBtn.style.transform = 'scale(' + (s.size / 100) + ')';
+    } else {
+        kickBtn.style.left = '';
+        kickBtn.style.top = '';
+        kickBtn.style.right = '20px';
+        kickBtn.style.bottom = '22px';
+        kickBtn.style.opacity = '';
+        kickBtn.style.transform = '';
+
+        powerBtn.style.left = '';
+        powerBtn.style.top = '';
+        powerBtn.style.right = '31px';
+        powerBtn.style.bottom = '130px';
+        powerBtn.style.opacity = '';
+        powerBtn.style.transform = '';
+
+        fullscreenBtn.style.left = '';
+        fullscreenBtn.style.top = '';
+        fullscreenBtn.style.right = '12px';
+        fullscreenBtn.style.bottom = '';
+        fullscreenBtn.style.top = '12px';
+        fullscreenBtn.style.opacity = '';
+        fullscreenBtn.style.transform = '';
+
+        settingsBtn.style.left = '';
+        settingsBtn.style.top = '';
+        settingsBtn.style.right = '12px';
+        settingsBtn.style.bottom = '12px';
+        settingsBtn.style.opacity = '';
+        settingsBtn.style.transform = '';
+    }
+}
+
+function openHudCustomizer() {
+    menuOpen = true;
+    settingsOverlay.classList.add('hidden');
+    settingsOverlay.setAttribute('aria-hidden', 'true');
+
+    // Esconde o HUD real do jogo
+    kickBtn.style.display = 'none';
+    powerBtn.style.display = 'none';
+    fullscreenBtn.style.display = 'none';
+    settingsBtn.style.display = 'none';
+    area.style.display = 'none';
+    stick.style.display = 'none';
+
+    hudCustomizer.classList.remove('hidden');
+    hudCustomizer.classList.add('full');
+    hudCustomizer.setAttribute('aria-hidden', 'false');
+
+    hudCanvas.innerHTML = '';
+
+    const items = [
+        { id: 'kick', w: 92, h: 92 },
+        { id: 'power', w: 70, h: 70 },
+        { id: 'fullscreen', w: 44, h: 44 },
+        { id: 'settings', w: 44, h: 44 },
+    ];
+
+    items.forEach(it => {
+        const d = document.createElement('div');
+        d.className = 'hud-drag ' + it.id;
+        d.textContent = it.id === 'kick' ? 'CHUTE' : it.id === 'power' ? 'SUPER' : it.id === 'fullscreen' ? '⛶' : '⚙';
+        d.style.left = settings.hud[it.id].x + 'px';
+        d.style.top = settings.hud[it.id].y + 'px';
+        d.style.width = it.w + 'px';
+        d.style.height = it.h + 'px';
+        hudCanvas.appendChild(d);
+        makeDraggable(d, it.id);
+
+        d.addEventListener('pointerdown', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            editingHudId = it.id;
+            const h = settings.hud[it.id];
+            hudPropsTitle.textContent = 'Ajustar: ' + it.id.toUpperCase();
+            hudPropsName.textContent = it.id.toUpperCase();
+            hudPropOpacity.value = h.opacity;
+            hudPropSize.value = h.size;
+            hudPropsPanel.classList.remove('hidden');
+        });
+    });
+
+    hudCustomizing = true;
+}
+
+function closeHudCustomizer() {
+    menuOpen = false;
+    hudCustomizer.classList.add('hidden');
+    hudCustomizer.classList.remove('full');
+    hudCustomizer.setAttribute('aria-hidden', 'true');
+    hudCustomizing = false;
+
+    // Restaura o HUD real do jogo
+    kickBtn.style.display = '';
+    powerBtn.style.display = '';
+    fullscreenBtn.style.display = '';
+    settingsBtn.style.display = '';
+    area.style.display = '';
+    stick.style.display = '';
+
+    applyHUDPositions();
+}
+
+function makeDraggable(el, id) {
+    let active = false;
+    let startX, startY, startLeft, startTop;
+
+    const start = (clientX, clientY) => {
+        active = true;
+        startX = clientX;
+        startY = clientY;
+        const rect = el.getBoundingClientRect();
+        startLeft = rect.left;
+        startTop = rect.top;
+        el.style.transition = 'none';
+    };
+
+    const move = (clientX, clientY) => {
+        if (!active) return;
+        const dx = clientX - startX;
+        const dy = clientY - startY;
+        let nx = startLeft + dx;
+        let ny = startTop + dy;
+        const maxX = hudCanvas.clientWidth - el.offsetWidth;
+        const maxY = hudCanvas.clientHeight - el.offsetHeight;
+        if (nx < 0) nx = 0;
+        if (nx > maxX) nx = maxX;
+        if (ny < 0) ny = 0;
+        if (ny > maxY) ny = maxY;
+        el.style.left = nx + 'px';
+        el.style.top = ny + 'px';
+        settings.hud[id].x = nx;
+        settings.hud[id].y = ny;
+    };
+
+    const end = () => {
+        active = false;
+        el.style.transition = '';
+    };
+
+    let capturedId = null;
+
+    el.addEventListener('pointerdown', e => {
+        e.preventDefault();
+        start(e.clientX, e.clientY);
+        capturedId = e.pointerId;
+        try { el.setPointerCapture(e.pointerId); } catch (err) {}
+    });
+
+    window.addEventListener('pointermove', e => {
+        if (active && e.pointerId === capturedId) move(e.clientX, e.clientY);
+    });
+
+    window.addEventListener('pointerup', e => {
+        if (active && e.pointerId === capturedId) end();
+    });
+
+    window.addEventListener('pointercancel', e => {
+        if (active && e.pointerId === capturedId) end();
+    });
+}
+
+settingsHudBtn.addEventListener('click', openHudCustomizer);
+hudReset.addEventListener('click', () => {
+    settings.customHud = false;
+    settings.hud = {
+        kick: { x: window.innerWidth - 112, y: window.innerHeight - 114, opacity: 100, size: 100 },
+        power: { x: window.innerWidth - 66, y: window.innerHeight - 172, opacity: 100, size: 100 },
+        fullscreen: { x: window.innerWidth - 72, y: 34, opacity: 100, size: 100 },
+        settings: { x: 34, y: 34, opacity: 100, size: 100 },
+    };
+    saveSettings();
+    applyHUDPositions();
+});
+hudPropOpacity.addEventListener('input', () => {
+    if (editingHudId) {
+        settings.hud[editingHudId].opacity = Number(hudPropOpacity.value);
+        updateHudPreview(editingHudId);
+    }
+});
+
+hudPropSize.addEventListener('input', () => {
+    if (editingHudId) {
+        settings.hud[editingHudId].size = Number(hudPropSize.value);
+        updateHudPreview(editingHudId);
+    }
+});
+
+hudPropsClose.addEventListener('click', () => {
+    hudPropsPanel.classList.add('hidden');
+    editingHudId = null;
+});
+
+function updateHudPreview(id) {
+    const d = hudCanvas.querySelector('.hud-drag.' + id);
+    if (!d) return;
+    const h = settings.hud[id];
+    const opacity = h.opacity / 100;
+    const scale = h.size / 100;
+    d.style.opacity = opacity;
+    d.style.transform = 'scale(' + scale + ')';
+    let w = 92, hgt = 92;
+    if (id === 'power') { w = 70; hgt = 70; }
+    if (id === 'fullscreen' || id === 'settings') { w = 44; hgt = 44; }
+    d.style.width = (w * scale) + 'px';
+    d.style.height = (hgt * scale) + 'px';
+}
+
+hudSave.addEventListener('click', () => {
+    settings.customHud = true;
+    saveSettings();
+    closeHudCustomizer();
+});
+
+function openKeysCustomizer() {
+    menuOpen = true;
+    settingsOverlay.classList.add('hidden');
+    settingsOverlay.setAttribute('aria-hidden', 'true');
+
+    // Esconde o HUD real do jogo
+    kickBtn.style.display = 'none';
+    powerBtn.style.display = 'none';
+    fullscreenBtn.style.display = 'none';
+    settingsBtn.style.display = 'none';
+    area.style.display = 'none';
+    stick.style.display = 'none';
+
+    keysCustomizer.classList.remove('hidden');
+    keysCustomizer.setAttribute('aria-hidden', 'false');
+
+    keysCanvas.innerHTML = '';
+
+    const keyItems = [
+        { id: 'up', label: 'Andar para cima', w: 120, h: 60 },
+        { id: 'down', label: 'Andar para baixo', w: 120, h: 60 },
+        { id: 'left', label: 'Andar para esquerda', w: 120, h: 60 },
+        { id: 'right', label: 'Andar para direita', w: 120, h: 60 },
+        { id: 'kick', label: 'Chutar', w: 100, h: 60 },
+        { id: 'power', label: 'Poder (Super)', w: 120, h: 60 },
+    ];
+
+    keyItems.forEach(it => {
+        const d = document.createElement('div');
+        d.className = 'key-drag ' + it.id;
+        d.textContent = it.label + ' [' + settings.keyboard.keys[it.id] + ']';
+        d.style.left = settings.hud[it.id] ? settings.hud[it.id].x + 'px' : '20px';
+        d.style.top = settings.hud[it.id] ? settings.hud[it.id].y + 'px' : '20px';
+        d.style.width = it.w + 'px';
+        d.style.height = it.h + 'px';
+        keysCanvas.appendChild(d);
+        makeKeyDraggable(d, it.id);
+
+        d.addEventListener('pointerdown', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            editingKeyId = it.id;
+            keysPropsTitle.textContent = 'Tecla: ' + it.label;
+            keysPropsName.textContent = it.label;
+            keysPropKey.value = settings.keyboard.keys[it.id];
+            keysPropKey.placeholder = 'Pressione uma tecla...';
+            keysPropsPanel.classList.remove('hidden');
+        });
+    });
+}
+
+function closeKeysCustomizer() {
+    menuOpen = false;
+    keysCustomizer.classList.add('hidden');
+    keysCustomizer.setAttribute('aria-hidden', 'true');
+
+    // Restaura o HUD real do jogo
+    kickBtn.style.display = '';
+    powerBtn.style.display = '';
+    fullscreenBtn.style.display = '';
+    settingsBtn.style.display = '';
+    area.style.display = '';
+    stick.style.display = '';
+
+    settings.keyboard.enabled = true;
+    updateHUDVisibility();
+}
+
+function makeKeyDraggable(el, id) {
+    let active = false;
+    let startX, startY, startLeft, startTop;
+    let capturedId = null;
+
+    const start = (clientX, clientY) => {
+        active = true;
+        startX = clientX;
+        startY = clientY;
+        const rect = el.getBoundingClientRect();
+        startLeft = rect.left;
+        startTop = rect.top;
+        el.style.transition = 'none';
+    };
+
+    const move = (clientX, clientY) => {
+        if (!active) return;
+        const dx = clientX - startX;
+        const dy = clientY - startY;
+        let nx = startLeft + dx;
+        let ny = startTop + dy;
+        const maxX = keysCanvas.clientWidth - el.offsetWidth;
+        const maxY = keysCanvas.clientHeight - el.offsetHeight;
+        if (nx < 0) nx = 0;
+        if (nx > maxX) nx = maxX;
+        if (ny < 0) ny = 0;
+        if (ny > maxY) ny = maxY;
+        el.style.left = nx + 'px';
+        el.style.top = ny + 'px';
+        settings.hud[id] = settings.hud[id] || {};
+        settings.hud[id].x = nx;
+        settings.hud[id].y = ny;
+    };
+
+    const end = () => {
+        active = false;
+        el.style.transition = '';
+    };
+
+    el.addEventListener('pointerdown', e => {
+        e.preventDefault();
+        start(e.clientX, e.clientY);
+        capturedId = e.pointerId;
+        try { el.setPointerCapture(e.pointerId); } catch (err) {}
+    });
+
+    window.addEventListener('pointermove', e => {
+        if (active && e.pointerId === capturedId) move(e.clientX, e.clientY);
+    });
+
+    window.addEventListener('pointerup', e => {
+        if (active && e.pointerId === capturedId) end();
+    });
+
+    window.addEventListener('pointercancel', e => {
+        if (active && e.pointerId === capturedId) end();
+    });
+}
+
+settingsKeysBtn.addEventListener('click', () => {
+    const mainOpts = document.getElementById('settings-main-options');
+    const ks = document.getElementById('keys-section');
+    const closeBtn = document.getElementById('settings-close');
+    
+    if (ks.classList.contains('hidden')) {
+        // Show keys section, hide main options
+        mainOpts.classList.add('hidden');
+        ks.classList.remove('hidden');
+        closeBtn.textContent = 'VOLTAR';
+    } else {
+        // Hide keys section, show main options
+        ks.classList.add('hidden');
+        mainOpts.classList.remove('hidden');
+        closeBtn.textContent = 'FECHAR';
+    }
+});
+
+// Key menu rows - click to change key
+document.querySelectorAll('.key-row').forEach(row => {
+    row.addEventListener('pointerdown', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        const actionId = row.getAttribute('data-key');
+        editingKeyId = actionId;
+        row.classList.add('editing');
+        const val = row.querySelector('.key-value');
+        val.textContent = 'Pressione uma tecla...';
+    });
+});
+
+// Detecção automática de teclado: quando pressionar qualquer tecla, o HUD some
+window.addEventListener('keydown', e => {
+    const k = settings.keyboard.keys;
+    if (e.code === k.up) { kb.up = true; e.preventDefault(); }
+    if (e.code === k.down) { kb.down = true; e.preventDefault(); }
+    if (e.code === k.left) { kb.left = true; e.preventDefault(); }
+    if (e.code === k.right) { kb.right = true; e.preventDefault(); }
+    if (e.code === k.kick) { kb.kick = true; kb.justKicked = true; e.preventDefault(); }
+    if (e.code === k.power) { kb.power = true; kb.justPowered = true; e.preventDefault(); }
+    
+    // Detecta teclado automaticamente e esconde HUD
+    keyboardActive = true;
+    lastTouchTime = 0;
+    updateHUDVisibility();
+
+    // Se está editando uma tecla no menu
+    if (editingKeyId) {
+        e.preventDefault();
+        settings.keyboard.keys[editingKeyId] = e.code;
+        const val = document.getElementById('key-val-' + editingKeyId);
+        val.textContent = e.code === 'Space' ? 'Espaço' : e.code.replace('Key', '');
+        saveSettings();
+        rowEditingDone();
+    }
+});
+
+window.addEventListener('keyup', e => {
+    const k = settings.keyboard.keys;
+    if (e.code === k.up) kb.up = false;
+    if (e.code === k.down) kb.down = false;
+    if (e.code === k.left) kb.left = false;
+    if (e.code === k.right) kb.right = false;
+    if (e.code === k.kick) kb.kick = false;
+    if (e.code === k.power) kb.power = false;
+});
+
+function rowEditingDone() {
+    const row = document.querySelector('.key-row.editing');
+    if (row) row.classList.remove('editing');
+    editingKeyId = null;
+}
+
+window.addEventListener('mousedown', e => {
+    lastTouchTime = Date.now();
+    if (editingKeyId) {
+        rowEditingDone();
+    }
+    if (!menuOpen && !hudCustomizing && !editingKeyId && e.button === 0) {
+        kb.justKicked = true;
+    }
+});
+
+window.addEventListener('contextmenu', e => {
+    if (keyboardActive && !menuOpen && !hudCustomizing && !editingKeyId) {
+        e.preventDefault();
+        kb.justPowered = true;
+    }
+});
+
+window.addEventListener('touchstart', () => {
+    lastTouchTime = Date.now();
+    if (editingKeyId) {
+        rowEditingDone();
+    }
+});
+
+// Teclado: mostrar/esconder HUD baseado em toque vs teclado
+
+
+
+// ============================================================
+//  ONLINE (salas + relay WebSocket)
+// ============================================================
+const roomOverlay = document.getElementById('room-overlay');
+const roomCodeEl = document.getElementById('room-code');
+const roomStatusEl = document.getElementById('room-status');
+const roomTeamAEl = document.getElementById('room-team-a');
+const roomTeamBEl = document.getElementById('room-team-b');
+const roomCountAEl = document.getElementById('room-count-a');
+const roomCountBEl = document.getElementById('room-count-b');
+const roomStartBtn = document.getElementById('room-start-btn');
+const roomReadyBtn = document.getElementById('room-ready-btn');
+const roomLeaveBtn = document.getElementById('room-leave-btn');
+const roomCopyBtn = document.getElementById('room-copy-btn');
+const roomHintEl = document.getElementById('room-hint');
+const leaveMatchBtn = document.getElementById('leave-match-btn');
+const netToast = document.getElementById('net-toast');
+const lobbyCreateBtn = document.getElementById('lobby-create-btn');
+const lobbyJoinBtn = document.getElementById('lobby-join-btn');
+const lobbyCodeInput = document.getElementById('lobby-code-input');
+
+let ws = null;
+let myId = null;
+let roomData = null;
+let connectWaiters = [];
+let netQueue = [];
+let netSnaps = [];
+let guestSimAccum = 0;   // passo fixo de 1/60: guest e host simulam com o mesmo dt
+let hostSimAccum = 0;
+let frameNetAccum = 0;
+let toastTimer = 0;
+
+function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+}
+
+function showToast(text, duration) {
+    if (!netToast) return;
+    netToast.textContent = text;
+    netToast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { netToast.classList.remove('show'); }, duration || 3200);
+}
+
+function setRoomStatus(text) {
+    if (roomStatusEl) roomStatusEl.textContent = text;
+}
+
+function cleanLocalName() {
+    const n = String(lobbyPlayerName || '').trim().slice(0, 12);
+    return n || 'Jogador';
+}
+
+function showRoomOverlay(show) {
+    if (!roomOverlay) return;
+    if (show) {
+        roomOverlay.classList.remove('hidden');
+        roomOverlay.setAttribute('aria-hidden', 'false');
+        inLobby = true;
+        document.body.classList.add('in-lobby');
+        if (lobbyEl) lobbyEl.classList.add('hidden');
+        leaveMatchBtn.classList.remove('show');
+    } else {
+        roomOverlay.classList.add('hidden');
+        roomOverlay.setAttribute('aria-hidden', 'true');
+    }
+}
+
+function openMainLobby() {
+    showRoomOverlay(false);
+    openLobby();
+    leaveMatchBtn.classList.remove('show');
+}
+
+function wsUrl() {
+    const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+    return proto + location.host;
+}
+
+function currentRtt() {
+    let worst = 0;
+    if (roomData && Array.isArray(roomData.players)) {
+        for (let i = 0; i < roomData.players.length; i++) {
+            const ping = Number(roomData.players[i].ping) || 0;
+            if (ping > worst) worst = ping;
+        }
+    }
+    if (worst < 40) worst = 180;
+    return Math.min(worst + 40, 600);
+}
+
+function onWsMessage(event) {
+    let msg;
+    try {
+        msg = JSON.parse(event.data);
+    } catch (err) {
+        return;
+    }
+    if (!msg || !msg.t) return;
+
+    if (msg.t === 'welcome') {
+        myId = msg.id;
+        const waiters = connectWaiters.slice();
+        connectWaiters = [];
+        for (let i = 0; i < waiters.length; i++) {
+            try { waiters[i](); } catch (err) {}
+        }
+        return;
+    }
+
+    if (msg.t === 'room') {
+        roomData = msg.room;
+        renderRoom();
+        return;
+    }
+
+    if (msg.t === 'start') {
+        beginOnlineMatch(msg);
+        return;
+    }
+
+    if (msg.t === 'frame') {
+        onHostFrame(msg);
+        return;
+    }
+
+    if (msg.t === 'input') {
+        onGuestInput(msg);
+        return;
+    }
+
+    if (msg.t === 'matchEnded') {
+        if (roomData) roomData.state = 'lobby';
+        endCurrentMatch();
+        showToast('A partida foi encerrada.');
+        if (roomData) {
+            showRoomOverlay(true);
+            renderRoom();
+        } else {
+            openMainLobby();
+        }
+        return;
+    }
+
+    if (msg.t === 'hostChanged') {
+        showToast('O host mudou. Aguarde o novo host iniciar.');
+        return;
+    }
+
+    if (msg.t === 'peerLeft') {
+        showToast('Um jogador saiu da partida.');
+        return;
+    }
+
+    if (msg.t === 'backToLobby') {
+        endCurrentMatch();
+        if (roomData) {
+            showRoomOverlay(true);
+            renderRoom();
+        } else {
+            openMainLobby();
+        }
+        return;
+    }
+
+    if (msg.t === 'error') {
+        onServerError(msg);
+        return;
+    }
+
+    if (msg.t === 'pong') {
+        return;
+    }
+}
+
+function onWsClose() {
+    ws = null;
+    myId = null;
+    connectWaiters = [];
+
+    const wasPlaying = mode === 'host' || mode === 'guest';
+    if (wasPlaying) {
+        mode = 'solo';
+        endCurrentMatch();
+        openMainLobby();
+        showToast('Conexão encerrada.');
+    } else if (roomData) {
+        roomData = null;
+        openMainLobby();
+        showToast('Conexão encerrada.');
+    }
+}
+
+function ensureOnline(callback) {
+    if (ws && ws.readyState === WebSocket.OPEN && myId) {
+        callback();
+        return;
+    }
+
+    connectWaiters.push(callback);
+
+    if (ws && ws.readyState === WebSocket.CONNECTING) return;
+
+    try {
+        ws = new WebSocket(wsUrl());
+    } catch (err) {
+        connectWaiters = [];
+        showToast('Não foi possível conectar ao servidor.');
+        openMainLobby();
+        return;
+    }
+
+    ws.addEventListener('message', onWsMessage);
+    ws.addEventListener('close', onWsClose);
+    ws.addEventListener('error', function () {
+        showToast('Erro de conexão com o servidor.');
+    });
+}
+
+function onServerError(msg) {
+    const map = {
+        room_not_found: 'Sala não encontrada. Confira o código.',
+        room_full: 'Sala cheia (máximo de 4 jogadores).',
+        match_running: 'A partida já começou.',
+        team_full: 'Esse time já está cheio.',
+        not_host: 'Só o host pode iniciar a partida.',
+        no_room: 'Você não está em uma sala.',
+        rate: 'Muitas mensagens. Tente novamente.',
+        bad_json: 'Mensagem inválida.',
+    };
+    const text = map[msg.code] || msg.msg || 'Erro no servidor.';
+    showToast(text);
+
+    if (!roomData) {
+        showRoomOverlay(false);
+        openLobby();
+    }
+}
+
+function requestCreateRoom() {
+    const name = cleanLocalName();
+    showRoomOverlay(true);
+    renderRoom();
+    setRoomStatus('Criando sala...');
+
+    ensureOnline(function () {
+        ws.send(JSON.stringify({ t: 'create', name: name }));
+    });
+}
+
+function requestJoinRoom() {
+    const code = String(lobbyCodeInput && lobbyCodeInput.value || '').trim().toUpperCase();
+    if (code.length !== 4) {
+        showToast('Digite o código de 4 caracteres.');
+        return;
+    }
+
+    const name = cleanLocalName();
+    showRoomOverlay(true);
+    renderRoom();
+    setRoomStatus('Entrando na sala...');
+
+    ensureOnline(function () {
+        ws.send(JSON.stringify({ t: 'join', code: code, name: name }));
+    });
+}
+
+function renderRoom() {
+    if (!roomData) return;
+
+    const isHost = roomData.hostId === myId;
+    const me = roomData.players.filter(function (p) { return p.id === myId; })[0];
+    const total = roomData.players.length;
+
+    if (roomCodeEl) roomCodeEl.textContent = roomData.code || '----';
+    renderRoomTeam(0);
+    renderRoomTeam(1);
+
+    if (roomData.state === 'playing') {
+        setRoomStatus('Partida em andamento');
+    } else if (isHost) {
+        setRoomStatus(total < 2
+            ? 'Sala criada. Chame pelo menos mais 1 jogador.'
+            : 'Você é o host. Inicie quando todos estiverem prontos.');
+    } else if (me && me.ready) {
+        setRoomStatus('Pronto! Aguardando o host iniciar...');
+    } else {
+        setRoomStatus('Marque "Estou pronto" e aguarde o host.');
+    }
+
+    if (roomStartBtn) roomStartBtn.classList.toggle('hidden', !isHost || roomData.state !== 'lobby');
+    if (roomReadyBtn) roomReadyBtn.classList.toggle('hidden', isHost || roomData.state !== 'lobby');
+
+    if (!isHost && me && roomReadyBtn) {
+        roomReadyBtn.textContent = me.ready ? 'Cancelar pronto' : 'Estou pronto';
+        roomReadyBtn.classList.toggle('primary', !me.ready);
+    }
+
+    if (roomHintEl) {
+        roomHintEl.innerHTML = 'Convite: <code>' + escapeHtml(location.origin + '/?sala=' + roomData.code) + '</code>'
+            + '<br>Times de até 2. Toque em um espaço livre para trocar de time.';
+    }
+}
+
+function renderRoomTeam(team) {
+    if (!roomData) return;
+    const list = roomData.players.filter(function (p) { return p.team === team; });
+    const el = team === 0 ? roomTeamAEl : roomTeamBEl;
+    if (!el) return;
+
+    let html = '';
+    for (let i = 0; i < 2; i++) {
+        const p = list[i];
+        if (!p) {
+            html += '<div class="room-slot empty" data-team="' + team + '">Espaço livre<br><small>toque para entrar</small></div>';
+            continue;
+        }
+        const isMe = p.id === myId;
+        const ready = p.host || p.ready;
+        const tags = [];
+        if (p.host) tags.push('<span class="slot-tag crown">HOST</span>');
+        tags.push('<span class="slot-tag ' + (ready ? 'ready' : '') + '">' + (ready ? 'PRONTO' : 'AGUARDANDO') + '</span>');
+
+        html += '<div class="room-slot' + (isMe ? ' me' : '') + (p.host ? ' host' : '') + '">'
+            + '<div class="slot-name">' + escapeHtml(p.name) + (isMe ? ' (você)' : '') + '</div>'
+            + '<div>' + tags.join(' ') + '</div>'
+            + (isMe && roomData.state === 'lobby'
+                ? '<button class="slot-switch" data-switch="' + (1 - team) + '">Trocar de time</button>'
+                : '')
+            + '</div>';
+    }
+
+    el.innerHTML = html;
+    const counter = team === 0 ? roomCountAEl : roomCountBEl;
+    if (counter) counter.textContent = list.length + '/2';
+}
+
+function beginOnlineMatch(msg) {
+    const roster = msg && msg.roster ? msg.roster : [];
+    if (!roster.length) return;
+
+    const isHost = roomData && roomData.hostId === myId;
+    mode = isHost ? 'host' : 'guest';
+
+    startMatch(roster, {
+        localId: myId,
+        maxScore: msg.maxScore,
+        timeLimit: msg.timeLimit,
+    });
+
+    leaveMatchBtn.classList.add('show');
+    closeLobby();
+    showRoomOverlay(false);
+
+    netQueue = [];
+    netSnaps = [];
+    remoteInputs.clear();
+    guestSimAccum = 0;
+    hostSimAccum = 0;
+    frameNetAccum = 0;
+    guestInputSeq = 0;
+    guestLastAckedSeq = -1;
+    hostLastInputSeq = -1;
+    pendingInputs.length = 0;
+    netForceSyncFrames = 0;
+    lastNetPhase = null;
+    lastFrameArrival = 0;
+    netRtt = 0;
+    netJitter = 0;
+    netRenderDelay = 0;
+    for (const k of Object.keys(lastInputSeqByClient)) delete lastInputSeqByClient[k];
+}
+
+function lerp(a, b, f) {
+    return a + (b - a) * f;
+}
+
+function lerpAngle(a, b, f) {
+    let d = b - a;
+    while (d > Math.PI) d -= Math.PI * 2;
+    while (d < -Math.PI) d += Math.PI * 2;
+    return a + d * f;
+}
+
+function onMatchFinished(ev) {
+    let text = 'Fim de partida!';
+    if (ev && ev.winner === 0) text = 'O time vermelho venceu!';
+    else if (ev && ev.winner === 1) text = 'O time azul venceu!';
+    showToast(text, 5000);
+}
+
+function queueNetEvents(events) {
+    for (let i = 0; i < events.length; i++) netQueue.push(events[i]);
+    if (netQueue.length > 80) netQueue.splice(0, netQueue.length - 80);
+}
+
+function sendHostFrame() {
+    if (!ws || ws.readyState !== WebSocket.OPEN || !match || mode !== 'host') return;
+    const events = netQueue.splice(0, netQueue.length);
+    try {
+        ws.send(JSON.stringify({ t: 'frame', s: match.snapshot(), ev: events, lastInputSeq: lastInputSeqByClient }));
+    } catch (err) {}
+}
+
+function sendGuestInput(input) {
+    if (!ws || ws.readyState !== WebSocket.OPEN || mode !== 'guest') return;
+    if (!matchRunning) return;
+    try {
+        ws.send(JSON.stringify({ t: 'input', d: input, seq: input.seq }));
+    } catch (err) {}
+}
+
+function onGuestInput(msg) {
+    if (mode !== 'host' || !msg || !msg.id) return;
+    let entry = remoteInputs.get(msg.id);
+    if (!entry) { entry = { queue: [] }; remoteInputs.set(msg.id, entry); }
+    const d = msg.d && typeof msg.d === 'object'
+        ? msg.d
+        : { ax: 0, ay: 0, kick: false, power: false };
+    const seq = typeof msg.seq === 'number' ? msg.seq : 0;
+    // Descarta duplicatas/retransmissões e limita o backlog.
+    if (entry.queue.length && entry.queue[entry.queue.length - 1].seq >= seq) return;
+    entry.queue.push({ d: d, t: performance.now(), seq: seq });
+    if (entry.queue.length > 30) entry.queue.shift();
+    // O ack só é registrado quando o input é realmente aplicado em stepLocalMatch,
+    // para o guest não receber confirmação de um input que o host nunca simulou.
+}
+
+function onHostFrame(msg) {
+    if (mode !== 'guest' || !msg || !msg.s) return;
+
+    hostLastInputSeq = (msg.lastInputSeq && typeof msg.lastInputSeq[localPlayerId] === 'number')
+        ? msg.lastInputSeq[localPlayerId]
+        : -1;
+
+    const rt = performance.now();
+
+    // Jitter medido no intervalo de chegada dos frames — é isso que faz a
+    // interpolação saltar, não só o RTT médio.
+    if (lastFrameArrival) {
+        const delta = Math.min(rt - lastFrameArrival, 200);
+        netJitter = netJitter * 0.9 + Math.abs(delta - 16.7) * 0.1;
+    }
+    lastFrameArrival = rt;
+    netRtt = netRtt ? netRtt * 0.9 + currentRtt() * 0.1 : currentRtt();
+    netRenderDelay = Math.min(300, Math.max(0, netRtt / 2 + netJitter * 2 - settings.netExtrap));
+
+    netSnaps.push({ rt: rt, s: msg.s, lastInputSeq: hostLastInputSeq });
+    const cutoff = rt - 1500;
+    while (netSnaps.length && netSnaps[0].rt < cutoff) netSnaps.shift();
+    if (netSnaps.length > 90) netSnaps.splice(0, netSnaps.length - 90);
+
+    if (msg.s.phase !== lastNetPhase) {
+        lastNetPhase = msg.s.phase;
+        netForceSyncFrames = 3;
+    }
+
+    // Bola e colisões são do host: nada de aplicar velocidade de eventos aqui.
+    // Eventos só alimentam efeitos visuais (auras, explosão, coroa, banner).
+    if (msg.ev && msg.ev.length) handleSimEvents(msg.ev);
+}
+
+function snapLocalPlayerTo(ps) {
+    const lp = findPlayer(localPlayerId);
+    if (!lp || !ps) return;
+    lp.x = ps.x; lp.y = ps.y;
+    lp.vx = ps.vx; lp.vy = ps.vy;
+    lp.aimX = ps.ax; lp.aimY = ps.ay;
+    lp.powerArmed = !!ps.armed;
+    lp.powerCooldown = ps.cd || 0;
+    lp.superCharging = !!ps.ch;
+    lp.superChargeTimer = 0;
+    lp.superChargeDirX = ps.cdx || 0;
+    lp.superChargeDirY = ps.cdy || 0;
+    lp.superChargeSpeed = ps.csp || 0;
+    lp.crownTimer = ps.crown || 0;
+    lp.prevKick = false;
+    lp.prevPower = false;
+    if (ps.ch) {
+        const prog = Math.min(1, Math.max(0, ((ps.csp || 0.45) - 0.45) / 0.8));
+        lp.superChargeTimer = SIM.SUPER_CHARGE_DURATION * (1 - prog);
+    }
+}
+
+function reconcileGuestPlayer(ackSeq, snap) {
+    const lp = findPlayer(localPlayerId);
+    if (!lp) return;
+
+    let auth = null;
+    if (snap && snap.players) {
+        for (let i = 0; i < snap.players.length; i++) {
+            if (snap.players[i].id === localPlayerId) { auth = snap.players[i]; break; }
+        }
+    }
+    if (!auth) return;
+
+    // Gol/reset/troca de fase: snap completo (posição + estado).
+    if (netForceSyncFrames > 0) {
+        netForceSyncFrames--;
+        snapLocalPlayerTo(auth);
+        guestLastAckedSeq = typeof ackSeq === 'number' ? ackSeq : guestLastAckedSeq;
+        pendingInputs.length = 0;
+        return;
+    }
+
+    if (typeof ackSeq !== 'number' || ackSeq <= guestLastAckedSeq) return;
+    guestLastAckedSeq = ackSeq;
+
+    // REPLAY: o snapshot do host é a verdade no instante em que foi capturado.
+    // Sobre ele, reaplicamos os inputs que o guest enviou e o host ainda não
+    // processou. Isso reconstrói a posição atual sem comparar tempos diferentes.
+    const temp = {
+        x: auth.x, y: auth.y,
+        vx: auth.vx, vy: auth.vy,
+        aimX: auth.ax, aimY: auth.ay,
+        r: (SIM.PLAYER && SIM.PLAYER.r) || 22,
+        superCharging: !!auth.ch,
+        superChargeTimer: 0,
+        superChargeDirX: auth.cdx || 0,
+        superChargeDirY: auth.cdy || 0,
+        superChargeSpeed: auth.csp || 0,
+    };
+    if (temp.superCharging) {
+        const prog = Math.min(1, Math.max(0, ((auth.csp || 0.45) - 0.45) / 0.8));
+        temp.superChargeTimer = SIM.SUPER_CHARGE_DURATION * (1 - prog);
+    }
+
+    // Replay sem colisões: o snapshot do host já contém o resultado dos
+    // empurrões. Reaplicar colisões contra posições atrasadas do snapshot
+    // criava divergência permanente (~50 px) após o empurrão.
+    for (let i = 0; i < pendingInputs.length; i++) {
+        const pi = pendingInputs[i];
+        if (pi.seq > ackSeq && pi.input) {
+            SIM.predictPlayerMovement(temp, pi.dt, pi.input);
+        }
+    }
+
+    // Correção rápida: a cada snapshot (30→60 Hz) e com blend alto, o erro é
+    // absorvido em poucos frames em vez de arrastar porcentos de segundo.
+    const errX = temp.x - lp.x;
+    const errY = temp.y - lp.y;
+    const errLen = Math.hypot(errX, errY);
+    if (errLen > 0.8) {
+        // Correção rápida, mas limitada a ~10 px por snapshot: erros grandes
+        // (empurrão contra jogador remoto com latência) são absorvidos em
+        // poucos frames sem teleportar o jogador.
+        const smooth = Math.min(0.7, 10 / errLen);
+        lp.x += errX * smooth;
+        lp.y += errY * smooth;
+        lp.vx += (temp.vx - lp.vx) * smooth;
+        lp.vy += (temp.vy - lp.vy) * smooth;
+    }
+    lp.aimX = temp.aimX;
+    lp.aimY = temp.aimY;
+    lp.superCharging = temp.superCharging;
+    lp.superChargeTimer = temp.superChargeTimer;
+    lp.superChargeDirX = temp.superChargeDirX;
+    lp.superChargeDirY = temp.superChargeDirY;
+    lp.superChargeSpeed = temp.superChargeSpeed;
+
+    // Estado autoritativo não-posicional.
+    lp.powerCooldown = auth.cd || 0;
+    lp.crownTimer = auth.crown || 0;
+    if (auth.armed) lp.powerArmed = true;
+
+    while (pendingInputs.length && pendingInputs[0].seq <= ackSeq) pendingInputs.shift();
+}
+
+function applyGuestState(now, lastInputSeq) {
+    if (!matchState || !netSnaps.length || !ball) return;
+
+    const lastEntry = netSnaps[netSnaps.length - 1];
+    const latest = lastEntry.s;
+
+    // Placar/tempo/fase são do host. Troca de fase dispara snap completo.
+    matchState.score[0] = (latest.s && latest.s[0]) || 0;
+    matchState.score[1] = (latest.s && latest.s[1]) || 0;
+    matchState.time = latest.t || 0;
+    matchState.goalActive = latest.phase === 'goal';
+    matchState.goalPending = latest.phase === 'pending';
+    matchState.goalTimer = latest.gt || 0;
+    matchState.goalDelayTimer = latest.pt || 0;
+    matchState.finished = !!latest.finished;
+
+    // A detecção de troca de fase (e o force-sync) já acontece em onHostFrame.
+
+    // Render com atraso adaptativo: RTT/2 + 2*jitter. Isso mantém um snapshot
+    // "no meio" do intervalo de chegada, absorvendo o jitter do Pinggy sem
+    // extrapolar longamente (que era o que causava saltos).
+    const renderTime = now - netRenderDelay;
+    let a = netSnaps[0];
+    let b = netSnaps[0];
+    for (let i = 0; i < netSnaps.length; i++) {
+        if (netSnaps[i].rt <= renderTime) {
+            a = netSnaps[i];
+            b = netSnaps[i];
+        } else {
+            b = netSnaps[i];
+            break;
+        }
+    }
+    if (a === b && netSnaps.length >= 2 && renderTime > b.rt) {
+        a = netSnaps[netSnaps.length - 2];
+        b = netSnaps[netSnaps.length - 1];
+    }
+    let f = b.rt > a.rt ? (renderTime - a.rt) / (b.rt - a.rt) : 0;
+    f = Math.max(0, Math.min(1.5, f));
+
+    const A = a.s;
+    const B = b.s;
+
+    // Bola: 100% do host, interpolada como os jogadores remotos. Sem predição
+    // local e sem correção, não existe "vai e volta" nem travada em colisão.
+    if (latest.ball && A.ball && B.ball) {
+        if (latest.phase !== 'play' || netForceSyncFrames > 0) {
+            ball.x = latest.ball.x; ball.y = latest.ball.y;
+            ball.vx = latest.ball.vx; ball.vy = latest.ball.vy;
+            ball.angle = latest.ball.a || 0;
+        } else {
+            ball.x = lerp(A.ball.x, B.ball.x, f);
+            ball.y = lerp(A.ball.y, B.ball.y, f);
+            ball.vx = lerp(A.ball.vx, B.ball.vx, f);
+            ball.vy = lerp(A.ball.vy, B.ball.vy, f);
+            ball.angle = lerp(A.ball.a || 0, B.ball.a || 0, f);
+        }
+    }
+
+    for (let i = 0; i < B.players.length; i++) {
+        const ps = B.players[i];
+        if (ps.id === localPlayerId) continue;
+        const p = findPlayer(ps.id);
+        if (!p) continue;
+
+        let pa = ps;
+        for (let j = 0; j < A.players.length; j++) {
+            if (A.players[j].id === ps.id) { pa = A.players[j]; break; }
+        }
+
+        p.x = lerp(pa.x, ps.x, f);
+        p.y = lerp(pa.y, ps.y, f);
+        p.vx = lerp(pa.vx, ps.vx, f);
+        p.vy = lerp(pa.vy, ps.vy, f);
+        p.aimX = ps.ax;
+        p.aimY = ps.ay;
+        p.powerArmed = !!ps.armed;
+        p.powerCooldown = ps.cd || 0;
+        p.superCharging = !!ps.ch;
+        p.superChargeDirX = ps.cdx || 0;
+        p.superChargeDirY = ps.cdy || 0;
+        p.superChargeSpeed = ps.csp || 0;
+        p.crownTimer = ps.crown || 0;
+    }
+
+    reconcileGuestPlayer(lastInputSeq, latest);
+}
+function sendStartMatch() {
+    if (!roomData) return;
+    if (roomData.players.length < 2) {
+        showToast('Chame pelo menos mais 1 jogador para começar.');
+        return;
+    }
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ t: 'start' }));
+    }
+}
+
+function toggleReady() {
+    if (!roomData || !ws || ws.readyState !== WebSocket.OPEN) return;
+    const me = roomData.players.filter(function (p) { return p.id === myId; })[0];
+    if (!me) return;
+    ws.send(JSON.stringify({ t: 'ready', ready: !me.ready }));
+}
+
+function requestTeam(team) {
+    if (!roomData || roomData.state !== 'lobby') return;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ t: 'team', team: Number(team) === 1 ? 1 : 0 }));
+}
+
+function leaveRoomAndReturn() {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ t: 'leave' }));
+    }
+    roomData = null;
+    mode = 'solo';
+    endCurrentMatch();
+    openMainLobby();
+}
+
+if (lobbyCreateBtn) lobbyCreateBtn.addEventListener('click', requestCreateRoom);
+if (lobbyJoinBtn) lobbyJoinBtn.addEventListener('click', requestJoinRoom);
+
+if (lobbyCodeInput) {
+    lobbyCodeInput.addEventListener('input', function () {
+        this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+    });
+    lobbyCodeInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            requestJoinRoom();
+        }
+    });
+}
+
+if (roomStartBtn) roomStartBtn.addEventListener('click', sendStartMatch);
+if (roomReadyBtn) roomReadyBtn.addEventListener('click', toggleReady);
+if (roomLeaveBtn) roomLeaveBtn.addEventListener('click', leaveRoomAndReturn);
+
+if (roomCopyBtn) {
+    roomCopyBtn.addEventListener('click', function () {
+        if (!roomData) return;
+        const code = roomData.code || '----';
+        const link = location.origin + '/?sala=' + code;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(link).then(function () {
+                showToast('Link do convite copiado!');
+            }, function () {
+                showToast(link, 5000);
+            });
+        } else {
+            showToast(link, 5000);
+        }
+    });
+}
+
+if (roomOverlay) {
+    roomOverlay.addEventListener('click', function (e) {
+        const switchBtn = e.target.closest ? e.target.closest('[data-switch]') : null;
+        if (switchBtn) {
+            requestTeam(Number(switchBtn.getAttribute('data-switch')));
+            return;
+        }
+        const empty = e.target.closest ? e.target.closest('.room-slot.empty') : null;
+        if (empty) {
+            requestTeam(Number(empty.getAttribute('data-team')));
+        }
+    });
+}
+
+if (leaveMatchBtn) {
+    leaveMatchBtn.addEventListener('click', function () {
+        if (matchRunning && ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ t: 'leave' }));
+            showToast('Voltando para a sala...');
+            return;
+        }
+
+        mode = 'solo';
+        endCurrentMatch();
+        openMainLobby();
+    });
+}
+
+// Ping periódico (também mantém a conexão viva)
+setInterval(function () {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        try { ws.send(JSON.stringify({ t: 'ping', ts: performance.now() })); } catch (err) {}
+    }
+}, 3000);
+
+// Link de convite: pré-preenche o código da sala
+try {
+    const salaParam = new URLSearchParams(location.search).get('sala');
+    if (salaParam && lobbyCodeInput) {
+        lobbyCodeInput.value = salaParam.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+    }
+} catch (err) {}
+
+// ============================================================
+//  LOOP
+// ============================================================
+let lastTime = performance.now();
+
+function loop(now) {
+    let dt = (now - lastTime) / 1000;
+    lastTime = now;
+    if (dt > 1 / 30) dt = 1 / 30;
+    if (dt < 0) dt = 0;
+
+    if (!menuOpen && !inLobby && matchRunning) {
+        if (mode === 'guest') {
+            // Reconciliação com o snapshot autoritativo do host
+            applyGuestState(now, hostLastInputSeq);
+
+            // Passo fixo de 1/60: guest e host simulam com exatamente o mesmo dt.
+            // Com dt variável (jitter do navegador) o replay divergia da simulação
+            // do host e a reconciliação "puxava" o jogador, causando travamento.
+            guestSimAccum += dt;
+            let steps = 0;
+            while (guestSimAccum >= 1 / 60 && steps < 4) {
+                const guestInput = buildLocalInput(now);
+                sendGuestInput(guestInput);
+
+                stepLocalMatch(1 / 60, guestInput);
+
+                // Colisões agora são simuladas localmente no guest; não há mais
+                // janela de suspensão da correção baseada em "mudança de velocidade".
+                const lp = findPlayer(localPlayerId);
+                if (lp) {
+                    pendingInputs.push({
+                        seq: guestInput.seq,
+                        dt: 1 / 60,
+                        input: { ax: guestInput.ax, ay: guestInput.ay, kick: false, power: false },
+                        postX: lp.x, postY: lp.y, postVx: lp.vx, postVy: lp.vy,
+                    });
+                    if (pendingInputs.length > 120) pendingInputs.shift();
+                }
+                guestSimAccum -= 1 / 60;
+                steps++;
+            }
+            // updateViews/updateEffects/updateKickAuras já são chamados por
+            // stepLocalMatch; chamar de novo aqui fazia os efeitos correrem 2x.
+        } else {
+            // Passo fixo também no host: trajetórias idênticas às do guest,
+            // sem divergência por jitter e sem correções no jogador remoto.
+            hostSimAccum += dt;
+            let steps = 0;
+            while (hostSimAccum >= 1 / 60 && steps < 4) {
+                stepLocalMatch(1 / 60);
+                hostSimAccum -= 1 / 60;
+                steps++;
+            }
+
+            if (mode === 'host') {
+                frameNetAccum += dt;
+                if (frameNetAccum >= 1 / 60) {
+                    frameNetAccum = 0;
+                    sendHostFrame();
+                }
+            }
+        }
+
+        updatePowerUI();
+    } else {
+        updateEffects(dt);
+    }
+
+    render();
+
+    requestAnimationFrame(loop);
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+mode = 'solo';
+startMatch([{ id: 'local', name: 'Você', team: 0 }], { localId: 'local' });
+matchRunning = false;
+
+updatePowerUI();
+resize();
+applyHUDPositions();
+updateHUDVisibility();
+
+requestAnimationFrame(now => {
+    lastTime = now;
+    requestAnimationFrame(loop);
+});
+</script>
+</body>
+</html>
