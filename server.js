@@ -9,7 +9,7 @@
    da sala (modelo host-autoritativo).
 
    Rodar: node server.js
-   Variáveis: PORT (padrão 8083), HOST (padrão 127.0.0.1)
+   Variáveis: PORT (padrão 8083), HOST (padrão 0.0.0.0)
    ============================================================ */
 'use strict';
 
@@ -19,7 +19,7 @@ const path = require('path');
 const { WebSocketServer } = require('ws');
 
 const PORT = Number(process.env.PORT || 8083);
-const HOST = process.env.HOST || '127.0.0.1';
+const HOST = process.env.HOST || '0.0.0.0';
 const ROOT = __dirname;
 
 const MAX_PLAYERS = 4;
